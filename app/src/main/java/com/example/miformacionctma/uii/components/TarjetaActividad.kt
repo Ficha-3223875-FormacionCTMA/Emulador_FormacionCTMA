@@ -50,8 +50,10 @@ fun TarjetaActividad(
         modifier = Modifier
             .fillMaxWidth()
             .semantics {
+                // Se agrega la fecha a la descripción accesible para TalkBack (CP-03)
                 contentDescription =
                     "Actividad ${actividad.titulo}, " +
+                            "fecha de entrega ${actividad.fecha}, " +
                             "estado ${actividad.estado}, " +
                             "progreso ${actividad.progreso} por ciento"
             }
@@ -110,7 +112,7 @@ fun TarjetaActividad(
 
 
             // ─────────────────────────────
-            // FECHA + ESTADO
+            // FECHA + ESTADO (CUMPLIMIENTO HU)
             // ─────────────────────────────
 
             Row(
@@ -119,7 +121,8 @@ fun TarjetaActividad(
             ) {
 
                 Text(
-                    text = "Fecha: ${actividad.fecha}"
+                    text = "Fecha: ${actividad.fecha}",
+                    style = MaterialTheme.typography.bodyMedium
                 )
 
                 Text(
