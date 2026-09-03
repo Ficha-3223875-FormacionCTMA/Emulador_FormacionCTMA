@@ -5,6 +5,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
+interface ReporteRepository {
+    val reportes: StateFlow<List<Reporte>>
+    fun agregar(reporte: Reporte)
+}
+
 class ReporteRepositoryImpl : ReporteRepository {
 
     private val _reportes = MutableStateFlow<List<Reporte>>(emptyList())
@@ -16,5 +21,3 @@ class ReporteRepositoryImpl : ReporteRepository {
         _reportes.value = _reportes.value + reporte
     }
 }
-
-open annotation class ReporteRepository
