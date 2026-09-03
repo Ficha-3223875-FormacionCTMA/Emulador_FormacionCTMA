@@ -29,8 +29,10 @@ fun TarjetaActividad(
         modifier = Modifier
             .fillMaxWidth()
             .semantics {
+
                 contentDescription =
                     "Actividad ${actividad.titulo}, " +
+                            "fecha ${actividad.fecha}, " +
                             "estado ${actividad.estado}, " +
                             "progreso ${actividad.progreso} por ciento"
             }
@@ -47,14 +49,18 @@ fun TarjetaActividad(
                 style = MaterialTheme.typography.titleLarge
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(
+                modifier = Modifier.height(8.dp)
+            )
 
             Text(
                 text = actividad.descripcion,
                 style = MaterialTheme.typography.bodyMedium
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(
+                modifier = Modifier.height(12.dp)
+            )
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -71,23 +77,28 @@ fun TarjetaActividad(
                 )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(
+                modifier = Modifier.height(12.dp)
+            )
 
             Text(
                 text = "Progreso: ${actividad.progreso}%"
             )
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(
+                modifier = Modifier.height(6.dp)
+            )
 
             LinearProgressIndicator(
                 progress = {
-                    actividad.progreso / 100f
+                    actividad.progreso.coerceIn(0, 100) / 100f
                 },
                 modifier = Modifier.fillMaxWidth()
             )
         }
     }
 }
+
 
 @Preview(showBackground = true)
 @Composable
@@ -96,11 +107,12 @@ fun TarjetaActividadPreview() {
     MiFormacionCTMATheme {
 
         TarjetaActividad(
+
             actividad = ActividadFormativa(
                 id = 1,
-                titulo = "Actividad de prueba",
-                descripcion = "Esta es una actividad de ejemplo.",
-                fecha = "11 de agosto",
+                titulo = "Actividad de ejemplo",
+                descripcion = "Esta es una actividad para probar la tarjeta.",
+                fecha = "18 de agosto",
                 estado = "En proceso",
                 progreso = 60
             )

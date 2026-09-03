@@ -3,8 +3,8 @@ package com.example.miformacionctma
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import com.example.miformacionctma.ui.screens.PantallaActividades
 import com.example.miformacionctma.ui.theme.MiFormacionCTMATheme
-import com.example.miformacionctma.uii.screens.PantallaActividades
 
 class MainActivity : ComponentActivity() {
 
@@ -12,7 +12,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
+
             MiFormacionCTMATheme {
+
                 PantallaActividades()
             }
         }
