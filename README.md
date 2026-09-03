@@ -70,7 +70,7 @@ Proyecto académico desarrollado para el programa **Análisis y Desarrollo de So
 🟢 En desarrollo.
 
 
-## GUIA 1 -- preguntas de comprension 
+## GUIA 1 -- preguntas de comprension
 ¿Qué diferencia práctica encuentras entre una aplicación móvil y una página web?
 Respuesta: Una aplicación móvil se instala en el celular y está diseñada especialmente para usarse desde ahí, mientras que una página web se abre desde un navegador.
 
@@ -102,7 +102,7 @@ Identifica dos riesgos de privacidad en una app que almacena datos de aprendices
 Respuesta: Un riesgo sería que alguien pueda acceder a los datos sin autorización. Otro sería que la información personal de los aprendices se filtre o se comparta sin permiso.
 
 
-## GUIA 2 - preguntas para validar aprendizaje 
+## GUIA 2 - preguntas para validar aprendizaje
 ¿Por qué elegiste val o var en un dato específico?
 Respuesta: Usé val cuando el dato no necesitaba cambiar, por ejemplo el título o la fecha de una actividad. Usé var cuando el dato podía cambiar durante el funcionamiento de la aplicación, como el estado de una tarjeta desplegable.
 
@@ -132,6 +132,106 @@ Respuesta: Cambiaría la condición que considera una actividad como urgente par
 ## Adaptación y Previews adicionales
 - Se implementó `ContenidoAdaptable` con `BoxWithConstraints` para cambiar entre `LazyColumn` y `LazyVerticalGrid` según el ancho disponible.
 - Se añadieron dos previews extra:
-    - **Fuente grande** (`fontScale = 1.5f`).
-    - **Ancho ampliado** (`widthDp = 700`).
+  - **Fuente grande** (`fontScale = 1.5f`).
+  - **Ancho ampliado** (`widthDp = 700`).
 - Esto permite validar accesibilidad y diseño adaptable en diferentes configuraciones.
+
+# Pruebas y Scrum
+
+## 📖 Semana 2 – Pruebas de software y SCRUM
+
+### Historias de usuario
+- **HU-01 Reserva de actividad**  
+  *Como aprendiz, quiero reservar una actividad formativa con fecha y hora, para asegurar mi participación.*
+
+- **HU-02 Finalización con evidencia**  
+  *Como aprendiz, quiero marcar una actividad como completada con evidencia, para que el sistema registre mi progreso.*
+
+### Criterios de aceptación
+- **HU-01**
+  - Dado que selecciono una actividad y una fecha disponible, cuando confirmo la reserva, entonces el sistema guarda la reserva y muestra confirmación.
+  - Dado que intento reservar en una fecha ocupada, cuando confirmo, entonces el sistema rechaza y muestra mensaje de error.
+  - Dado que cancelo una reserva antes de la fecha, cuando confirmo la cancelación, entonces el sistema libera el cupo.
+
+- **HU-02**
+  - Dado que adjunto evidencia válida, cuando marco la actividad como completada, entonces el sistema cambia estado a COMPLETADA.
+  - Dado que intento finalizar sin evidencia, cuando confirmo, entonces el sistema rechaza la acción y muestra mensaje.
+  - Dado que intento finalizar una actividad no asignada, cuando confirmo, entonces el sistema bloquea el acceso.
+
+### Requisito no funcional
+- *El 95% de las reservas debe responder en máximo 2 segundos con 100 usuarios concurrentes.*
+
+### Matriz de riesgos
+| Riesgo | Prob. | Impacto | Exposición | Prioridad |
+|--------|-------|---------|------------|-----------|
+| Reserva duplicada | 3 | 4 | 12 | Alta |
+| Finalización sin evidencia | 4 | 5 | 20 | Muy alta |
+| Acceso a actividades no asignadas | 4 | 5 | 20 | Muy alta |
+| Texto desalineado | 2 | 1 | 2 | Baja |
+
+### Plan de pruebas v1
+- **Objetivo:** Validar reservas y finalización con evidencia.
+- **Alcance incluido:** Reservas, cancelaciones, finalización con evidencia.
+- **Fuera de alcance:** Pagos y facturación.
+- **Base de prueba:** Historias, criterios, prototipo de PantallaActividades.
+- **Riesgos:** duplicidad, evidencia faltante, acceso indebido.
+- **Enfoque:** pruebas funcionales, de integración y de aceptación.
+- **Ambiente:** App Android con datos sintéticos.
+- **Roles:** Tester, desarrollador, PO.
+- **Criterios de entrada:** Historias revisadas, ambiente desplegado.
+- **Criterios de salida:** 100% de casos críticos ejecutados, cero defectos críticos abiertos.
+
+---
+
+## 🧪 Semana 3 – Diseño sistemático de casos y gestión de defectos
+
+### Casos de prueba
+- **Positivos:** CP-01 Reserva válida, CP-02 Finalización con evidencia, CP-03 Cancelación antes de fecha.
+- **Negativos:** CP-04 Reserva ocupada, CP-05 Finalización sin evidencia, CP-06 Finalización no asignada, CP-07 Cancelación tardía.
+- **Partición de equivalencia:** CP-FOTO-01 Formato válido, CP-FOTO-02 Formato inválido, CP-FOTO-03 Tamaño > 5MB.
+- **Valores límite:** CP-TXT-01 Observación con 9 caracteres (FAIL), CP-TXT-02 Observación con 10 caracteres (PASS).
+- **Tabla de decisión:** 4 reglas (asignada+foto+receptor → ENTREGADA; no asignada → denegado; foto inválida → solicitar foto; receptor no identificado → solicitar receptor).
+- **Transiciones de estado:** CREAR→ASIGNAR→EN_RUTA→ENTREGADA (válida), EN_RUTA→NO_ENTREGADA (válida), CANCELADA→ENTREGADA (inválida), ENTREGADA→EN_RUTA (inválida).
+
+### Registro de defectos
+| ID | Caso origen | Título | Severidad | Prioridad | Estado | Ref. |
+|----|-------------|--------|-----------|-----------|--------|------|
+| BUG-001 | CP-05 | Finalización sin evidencia aceptada | Crítica | P1 | Nuevo | HU-02 / CA-01 |
+| BUG-002 | CP-04 | Reserva duplicada en fecha ocupada | Alta | P1 | Nuevo | HU-01 / CA-02 |
+
+### Reporte reproducible
+- **ID:** BUG-001
+- **Título:** Finalización sin evidencia aceptada.
+- **Ambiente:** Staging v0.3.2; Pixel 7; datos sintéticos.
+- **Referencia:** HU-02 / CA-01 / CP-05.
+- **Precondición:** Actividad asignada al aprendiz.
+- **Pasos:** 1) Abrir actividad asignada. 2) Intentar finalizar sin evidencia.
+- **Resultado esperado:** Rechazo con mensaje.
+- **Resultado real:** El sistema acepta y marca COMPLETADA.
+- **Severidad/Prioridad:** Crítica / P1.
+- **Estado inicial:** Nuevo.
+
+### Matriz de trazabilidad
+| Historia | Criterio | Riesgo | Caso | Resultado | Defecto |
+|----------|----------|--------|------|-----------|---------|
+| HU-01 | CA-01 Reserva válida | Duplicidad | CP-01 | PASS | — |
+| HU-01 | CA-02 Fecha ocupada | Duplicidad | CP-04 | FAIL | BUG-002 |
+| HU-02 | CA-01 Evidencia obligatoria | Evidencia faltante | CP-02 | PASS | — |
+| HU-02 | CA-01 Evidencia obligatoria | Evidencia faltante | CP-05 | FAIL | BUG-001 |
+| HU-02 | CA-02 Solo asignada | Acceso indebido | CP-06 | FAIL | — |
+
+---
+
+## 📋 Checklist UX / Accesibilidad
+
+| Criterio | Evidencia en el proyecto |
+|----------|--------------------------|
+| Contraste | Tipografía y colores Material 3 garantizan contraste. |
+| Orden de lectura | Jerarquía clara: título → subtítulo → lista. |
+| Escalado de fuente | Preview con `fontScale = 1.5f` muestra adaptación. |
+| Zonas táctiles | Botón “Actualizar” y tarjetas con padding ≥48dp. |
+| Diseño adaptable | `BoxWithConstraints` alterna lista y grid según ancho. |
+| Estado vacío | Mensaje y acción clara cuando no hay actividades. |
+| Evidencia visual | Capturas: lista, estado vacío, fuente grande, grid. |
+
+---
