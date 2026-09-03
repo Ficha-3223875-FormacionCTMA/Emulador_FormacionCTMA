@@ -50,9 +50,9 @@ fun TarjetaActividad(
         modifier = Modifier
             .fillMaxWidth()
             .semantics {
-                // Se agrega la fecha a la descripción accesible para TalkBack (CP-03)
                 contentDescription =
-                    "Actividad ${actividad.titulo}, " +
+                    "Actividad número ${actividad.id}, " +
+                            "${actividad.titulo}, " +
                             "fecha de entrega ${actividad.fecha}, " +
                             "estado ${actividad.estado}, " +
                             "progreso ${actividad.progreso} por ciento"
@@ -70,7 +70,7 @@ fun TarjetaActividad(
         ) {
 
             // ─────────────────────────────
-            // TÍTULO + FLECHA
+            // TÍTULO CON ID VISIBLE + FLECHA
             // ─────────────────────────────
 
             Row(
@@ -79,7 +79,8 @@ fun TarjetaActividad(
             ) {
 
                 Text(
-                    text = actividad.titulo,
+                    // Muestra el ID antes del título (#1 - Introducción...)
+                    text = "#${actividad.id} - ${actividad.titulo}",
                     style = MaterialTheme.typography.titleLarge,
                     modifier = Modifier.weight(1f)
                 )
@@ -112,7 +113,7 @@ fun TarjetaActividad(
 
 
             // ─────────────────────────────
-            // FECHA + ESTADO (CUMPLIMIENTO HU)
+            // FECHA + ESTADO
             // ─────────────────────────────
 
             Row(
@@ -196,6 +197,18 @@ fun TarjetaActividad(
 
                     Spacer(
                         modifier = Modifier.height(8.dp)
+                    )
+
+
+                    // ID VISIBLE DENTRO DEL DETALLE
+                    Text(
+                        text = "🆔 Identificador: #${actividad.id}",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+
+
+                    Spacer(
+                        modifier = Modifier.height(6.dp)
                     )
 
 
