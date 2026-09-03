@@ -235,3 +235,6 @@ Respuesta: Cambiaría la condición que considera una actividad como urgente par
 | Evidencia visual | Capturas: lista, estado vacío, fuente grande, grid. |
 
 ---
+
+
+
