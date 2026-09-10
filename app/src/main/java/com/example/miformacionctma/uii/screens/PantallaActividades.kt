@@ -88,7 +88,7 @@ fun ContenidoAdaptable(
     modifier: Modifier = Modifier
 ) {
     BoxWithConstraints(modifier = modifier) {
-        if (maxWidth < 600.dp) {
+        if (this.maxWidth < 600.dp) {
             LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 item {
                     Column(
