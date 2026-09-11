@@ -39,7 +39,8 @@ import com.example.miformacionctma.uii.components.TarjetaActividad
 
 @Composable
 fun PantallaActividades(
-    actividades: List<ActividadFormativa> = actividadesEjemplo
+    actividades: List<ActividadFormativa> = actividadesEjemplo,
+    modifier: Modifier = Modifier
 ) {
 
     var filtroSeleccionado by remember {
@@ -64,7 +65,7 @@ fun PantallaActividades(
     }
 
     Scaffold(
-
+        modifier = modifier,
         topBar = {
 
             TopAppBar(
@@ -76,57 +77,35 @@ fun PantallaActividades(
 
     ) { paddingValues ->
 
-        BoxWithConstraints(
-
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
 
-            // Guardamos el ancho disponible para decidir
-            // qué tipo de diseño mostrar.
-            val anchoDisponible = maxWidth
+            EncabezadoYFiltros(
+                filtroSeleccionado = filtroSeleccionado,
+                onFiltroSeleccionado = {
+                    filtroSeleccionado = it
+                },
+                cantidadActividades = actividadesFiltradas.size
+            )
 
-            Column(
-                modifier = Modifier.fillMaxSize()
-            ) {
+            if (actividades.isEmpty()) {
 
-                EncabezadoYFiltros(
-                    filtroSeleccionado = filtroSeleccionado,
-                    onFiltroSeleccionado = {
-                        filtroSeleccionado = it
-                    },
-                    cantidadActividades = actividadesFiltradas.size
+                EstadoVacio(
+                    modifier = Modifier
+                        .fillMaxSize()
                 )
 
-                if (actividades.isEmpty()) {
+            } else {
 
-                    EstadoVacio(
-                        modifier = Modifier
-                            .fillMaxSize()
-                    )
-
-                } else {
-
-                    if (anchoDisponible < 600.dp) {
-
-                        // Pantalla compacta:
-                        // mostramos una lista vertical.
-                        ListaActividades(
-                            actividades = actividadesFiltradas,
-                            modifier = Modifier.weight(1f)
-                        )
-
-                    } else {
-
-                        // Pantalla amplia:
-                        // mostramos dos columnas.
-                        CuadriculaActividades(
-                            actividades = actividadesFiltradas,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                }
+                // Siempre mostramos dos columnas,
+                // sin importar el ancho de pantalla.
+                CuadriculaActividades(
+                    actividades = actividadesFiltradas,
+                    modifier = Modifier.weight(1f)
+                )
             }
         }
     }
@@ -261,7 +240,8 @@ fun EncabezadoYFiltros(
 
 
 /**
- * Lista vertical para pantallas pequeñas.
+ * Lista vertical (se conserva por si la quieres reutilizar,
+ * pero PantallaActividades ya no la usa).
  */
 @Composable
 fun ListaActividades(
@@ -306,7 +286,7 @@ fun ListaActividades(
 
 
 /**
- * Cuadrícula de dos columnas para pantallas amplias.
+ * Cuadrícula de dos columnas.
  */
 @Composable
 fun CuadriculaActividades(
@@ -522,7 +502,7 @@ val actividadesEjemplo = listOf(
 
 
 /**
- * Preview normal.
+ * Preview normal (ahora también en 2 columnas).
  */
 @Preview(
     showBackground = true,
@@ -540,9 +520,6 @@ fun PantallaActividadesPreview() {
 
 /**
  * Preview de pantalla amplia.
- *
- * Al superar 600dp se activa
- * la cuadrícula de dos columnas.
  */
 @Preview(
     showBackground = true,

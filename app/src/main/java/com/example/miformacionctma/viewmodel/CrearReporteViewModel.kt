@@ -1,19 +1,23 @@
 package com.example.miformacionctma.viewmodel
 
 import androidx.lifecycle.ViewModel
-import com.example.miformacionctma.model.Reporte
+import androidx.lifecycle.viewModelScope
+import com.example.miformacionctma.model.ActividadFormativa
 import com.example.miformacionctma.repository.ReporteRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import java.util.UUID
+import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 data class CrearUiState(
     val titulo: String = "",
     val errorTitulo: String? = null,
     val guardando: Boolean = false,
-    val guardadoId: String? = null
+    val guardadoId: Int? = null
 )
 
 class CrearReporteViewModel(
@@ -45,43 +49,39 @@ class CrearReporteViewModel(
 
         if (titulo.isBlank()) {
             _uiState.update {
-                it.copy(
-                    errorTitulo = "El título es obligatorio"
-                )
+                it.copy(errorTitulo = "El título es obligatorio")
             }
             return
         }
 
         if (titulo.length < 4) {
             _uiState.update {
-                it.copy(
-                    errorTitulo = "El título debe tener al menos 4 caracteres"
-                )
+                it.copy(errorTitulo = "El título debe tener al menos 4 caracteres")
             }
             return
         }
 
-        val id = UUID.randomUUID().toString()
+        val fechaHoy = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            .format(Date())
 
-        val reporte = Reporte(
-            id = id,
-            titulo = titulo
+        val reporte = ActividadFormativa(
+            id = 0,
+            titulo = titulo,
+            descripcion = "",
+            fecha = fechaHoy,
+            estado = "Pendiente",
+            progreso = 0
         )
 
         _uiState.update {
-            it.copy(
-                guardando = true,
-                errorTitulo = null
-            )
+            it.copy(guardando = true, errorTitulo = null)
         }
 
-        repository.agregar(reporte)
-
-        _uiState.update {
-            it.copy(
-                guardando = false,
-                guardadoId = id
-            )
+        viewModelScope.launch {
+            repository.agregar(reporte)
+            _uiState.update {
+                it.copy(guardando = false, guardadoId = 0)
+            }
         }
     }
 }

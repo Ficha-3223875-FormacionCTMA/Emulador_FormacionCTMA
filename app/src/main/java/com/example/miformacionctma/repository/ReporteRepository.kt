@@ -1,23 +1,27 @@
 package com.example.miformacionctma.repository
 
-import com.example.miformacionctma.model.Reporte
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import com.example.miformacionctma.data.local.AppDatabase
+import com.example.miformacionctma.data.local.toActividadFormativa
+import com.example.miformacionctma.data.local.toReporteEntity
+import com.example.miformacionctma.model.ActividadFormativa
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 interface ReporteRepository {
-    val reportes: StateFlow<List<Reporte>>
-    fun agregar(reporte: Reporte)
+    val reportes: Flow<List<ActividadFormativa>>
+    suspend fun agregar(reporte: ActividadFormativa)
 }
 
-class ReporteRepositoryImpl : ReporteRepository {
+class RoomReporteRepository(
+    private val db: AppDatabase
+) : ReporteRepository {
 
-    private val _reportes = MutableStateFlow<List<Reporte>>(emptyList())
+    override val reportes: Flow<List<ActividadFormativa>> =
+        db.reporteDao().obtenerTodos().map { lista ->
+            lista.map { it.toActividadFormativa() }
+        }
 
-    override val reportes: StateFlow<List<Reporte>> =
-        _reportes.asStateFlow()
-
-    override fun agregar(reporte: Reporte) {
-        _reportes.value = _reportes.value + reporte
+    override suspend fun agregar(reporte: ActividadFormativa) {
+        db.reporteDao().insertar(reporte.toReporteEntity())
     }
 }
