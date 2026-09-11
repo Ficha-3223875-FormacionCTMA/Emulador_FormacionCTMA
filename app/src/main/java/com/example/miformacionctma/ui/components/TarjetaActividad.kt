@@ -1,4 +1,4 @@
-package com.example.miformacionctma.uii.components
+package com.example.miformacionctma.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
