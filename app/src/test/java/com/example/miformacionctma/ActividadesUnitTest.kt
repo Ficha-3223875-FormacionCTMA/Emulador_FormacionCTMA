@@ -1,16 +1,36 @@
 package com.example.miformacionctma
 
+import com.example.miformacionctma.data.preferences.PreferenciasRepository
+import com.example.miformacionctma.data.repository.ActividadRepository
 import com.example.miformacionctma.model.ActividadFormativa
+import com.example.miformacionctma.ui.ActividadesViewModel
+import com.example.miformacionctma.ui.ListadoUiState
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.*
+import org.junit.After
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class ActividadesUnitTest {
 
     private lateinit var listaActividades: List<ActividadFormativa>
 
+    // Dispatcher y Mocks para pruebas deterministas de Corrutinas (CA-08)
+    private val testDispatcher = StandardTestDispatcher()
+    private val repository: ActividadRepository = mock()
+    private val preferenciasRepository: PreferenciasRepository = mock()
+
     @Before
     fun setUp() {
+        Dispatchers.setMain(testDispatcher)
+
         listaActividades = listOf(
             ActividadFormativa(1, "Scrum", "Desc 1", "11 de agosto", "Completada", 100),
             ActividadFormativa(
@@ -51,6 +71,11 @@ class ActividadesUnitTest {
                 0
             )
         )
+    }
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
     }
 
     // ==========================================
@@ -132,5 +157,47 @@ class ActividadesUnitTest {
         Assert.assertNotNull(actividadLarga.titulo)
         Assert.assertNotNull(actividadLarga.fecha)
         Assert.assertTrue(actividadLarga.progreso in 0..100)
+    }
+
+    // ==========================================
+    // BLOQUE 4: CORRUTINAS Y STATEFLOW (GUÍA 7)
+    // ==========================================
+
+    @Test
+    fun uiState_emiteEstadoVacio_cuandoNoHayDatos() = runTest {
+        whenever(preferenciasRepository.obtenerFiltroCompetencia()).thenReturn(flowOf(""))
+        whenever(preferenciasRepository.obtenerOrdenamiento()).thenReturn(flowOf("ASC"))
+        whenever(repository.obtenerActividades("", "ASC", "")).thenReturn(flowOf(emptyList()))
+
+        val viewModel = ActividadesViewModel(repository, preferenciasRepository)
+
+        val collector = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+
+        advanceUntilIdle() // <-- Avanza las corrutinas pendientes para procesar el Flow
+
+        Assert.assertEquals(ListadoUiState.Vacio, viewModel.uiState.value)
+        collector.cancel()
+    }
+
+    @Test
+    fun uiState_emiteEstadoContenido_cuandoHayDatos() = runTest {
+        whenever(preferenciasRepository.obtenerFiltroCompetencia()).thenReturn(flowOf(""))
+        whenever(preferenciasRepository.obtenerOrdenamiento()).thenReturn(flowOf("ASC"))
+        whenever(repository.obtenerActividades("", "ASC", "")).thenReturn(flowOf(listaActividades))
+
+        val viewModel = ActividadesViewModel(repository, preferenciasRepository)
+
+        val collector = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+
+        advanceUntilIdle() // <-- Avanza las corrutinas pendientes para procesar el Flow
+
+        val estadoActual = viewModel.uiState.value
+        Assert.assertTrue(estadoActual is ListadoUiState.Contenido)
+        Assert.assertEquals(10, (estadoActual as ListadoUiState.Contenido).actividades.size)
+        collector.cancel()
     }
 }
