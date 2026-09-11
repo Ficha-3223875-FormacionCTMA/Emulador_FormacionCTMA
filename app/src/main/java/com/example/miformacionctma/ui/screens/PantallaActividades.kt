@@ -40,30 +40,10 @@ import com.example.miformacionctma.uii.components.TarjetaActividad
 @Composable
 fun PantallaActividades(
     actividades: List<ActividadFormativa> = actividadesEjemplo,
+    filtroSeleccionado: String = "Todas",
+    onFiltroSeleccionado: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-
-    var filtroSeleccionado by remember {
-        mutableStateOf("Todas")
-    }
-
-    val actividadesFiltradas = when (filtroSeleccionado) {
-
-        "Completadas" -> actividades.filter {
-            it.estado == "Completada"
-        }
-
-        "En proceso" -> actividades.filter {
-            it.estado == "En proceso"
-        }
-
-        "Pendientes" -> actividades.filter {
-            it.estado == "Pendiente"
-        }
-
-        else -> actividades
-    }
-
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -85,10 +65,8 @@ fun PantallaActividades(
 
             EncabezadoYFiltros(
                 filtroSeleccionado = filtroSeleccionado,
-                onFiltroSeleccionado = {
-                    filtroSeleccionado = it
-                },
-                cantidadActividades = actividadesFiltradas.size
+                onFiltroSeleccionado = onFiltroSeleccionado,
+                cantidadActividades = actividades.size
             )
 
             if (actividades.isEmpty()) {
@@ -103,7 +81,7 @@ fun PantallaActividades(
                 // Siempre mostramos dos columnas,
                 // sin importar el ancho de pantalla.
                 CuadriculaActividades(
-                    actividades = actividadesFiltradas,
+                    actividades = actividades,
                     modifier = Modifier.weight(1f)
                 )
             }

@@ -28,7 +28,10 @@ import com.example.miformacionctma.ui.screens.PantallaActividades
 import com.example.miformacionctma.ui.screens.actividadesEjemplo
 import com.example.miformacionctma.ui.theme.MiFormacionCTMATheme
 import com.example.miformacionctma.viewmodel.CrearReporteViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -36,11 +39,28 @@ import kotlinx.coroutines.launch
 class PantallaActividadesViewModel(
     repository: ReporteRepository
 ) : ViewModel() {
-    val reportes = repository.reportes.stateIn(
+    private val _filtroSeleccionado = MutableStateFlow("Todas")
+    val filtroSeleccionado: StateFlow<String> = _filtroSeleccionado
+
+    val actividadesFiltradas = combine(
+        repository.reportes,
+        _filtroSeleccionado
+    ) { reportes, filtro ->
+        when (filtro) {
+            "Completadas" -> reportes.filter { it.estado == "Completada" }
+            "En proceso" -> reportes.filter { it.estado == "En proceso" }
+            "Pendientes" -> reportes.filter { it.estado == "Pendiente" }
+            else -> reportes
+        }
+    }.stateIn(
         scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
+        started = SharingStarted.Eagerly,
         initialValue = emptyList()
     )
+
+    fun cambiarFiltro(nuevoFiltro: String) {
+        _filtroSeleccionado.value = nuevoFiltro
+    }
 }
 
 class MainActivity : ComponentActivity() {
@@ -96,10 +116,13 @@ class MainActivity : ComponentActivity() {
                     when (pantallaActual) {
                         "LISTA" -> {
                             val actividadesViewModel: PantallaActividadesViewModel = viewModel(factory = viewModelFactory)
-                            val listaActividades by actividadesViewModel.reportes.collectAsState()
+                            val listaActividades by actividadesViewModel.actividadesFiltradas.collectAsState()
+                            val filtroSeleccionado by actividadesViewModel.filtroSeleccionado.collectAsState()
 
                             PantallaActividades(
                                 actividades = listaActividades,
+                                filtroSeleccionado = filtroSeleccionado,
+                                onFiltroSeleccionado = { actividadesViewModel.cambiarFiltro(it) },
                                 modifier = Modifier.padding(innerPadding)
                             )
                         }
