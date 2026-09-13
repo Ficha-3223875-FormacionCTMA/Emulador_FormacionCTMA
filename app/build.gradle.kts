@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.androidx.room)
+    alias(libs.plugins.kotlin.android)
 }
 
 // Carpeta versionada de esquemas exigida por el punto 3 y el entregable
@@ -13,12 +14,12 @@ room {
 
 android {
     namespace = "com.example.miformacionctma"
-    compileSdk = 34
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.example.miformacionctma"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 37
         versionCode = 1
         versionName = "1.0"
 
@@ -40,6 +41,9 @@ android {
     }
     buildFeatures {
         compose = true
+    }
+    kotlinOptions {
+        jvmTarget = "11"
     }
 }
 
@@ -70,6 +74,7 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation("androidx.test:core:1.6.1")
     androidTestImplementation(libs.androidx.room.testing)
     androidTestImplementation(libs.androidx.sqlite.framework)
     androidTestImplementation(libs.kotlinx.coroutines.test)

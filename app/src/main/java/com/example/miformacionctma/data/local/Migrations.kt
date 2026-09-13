@@ -11,13 +11,30 @@ import androidx.sqlite.execSQL
  * Esquema v1: reportes(id, titulo, descripcion, categoriaId, fechaCreacion)
  * Esquema v2: reportes(id, titulo, descripcion, categoriaId, fechaCreacion, resuelto)
  *
- * En Room 3.0 las migraciones reciben un SQLiteConnection (androidx.sqlite)
- * en lugar del antiguo SupportSQLiteDatabase, y migrate() es suspend.
+ * En Room 2.7.0+ las migraciones pueden recibir un SQLiteConnection (androidx.sqlite)
+ * en lugar del antiguo SupportSQLiteDatabase.
  */
 val MIGRATION_1_2 = object : Migration(1, 2) {
-    override suspend fun migrate(connection: SQLiteConnection) {
+    override fun migrate(connection: SQLiteConnection) {
         connection.execSQL(
             "ALTER TABLE reportes ADD COLUMN resuelto INTEGER NOT NULL DEFAULT 0"
+        )
+    }
+}
+
+val MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS actividades (
+                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                nombre TEXT NOT NULL,
+                descripcion TEXT NOT NULL,
+                progreso INTEGER NOT NULL,
+                estado TEXT NOT NULL,
+                fechaCreacion INTEGER NOT NULL
+            )
+            """.trimIndent()
         )
     }
 }

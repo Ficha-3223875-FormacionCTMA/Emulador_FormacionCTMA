@@ -1,5 +1,9 @@
 package com.example.miformacionctma
 
+import androidx.room.Room
+import androidx.sqlite.driver.bundled.BundledSQLiteDriver
+import androidx.test.core.app.ApplicationProvider
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.miformacionctma.data.local.AppDatabase
 import com.example.miformacionctma.data.local.MIGRATION_1_2
 import com.example.miformacionctma.data.local.dao.CategoriaDao
@@ -7,6 +11,7 @@ import com.example.miformacionctma.data.local.dao.ReporteDao
 import com.example.miformacionctma.data.local.entity.CategoriaEntity
 import com.example.miformacionctma.data.local.entity.ReporteEntity
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert
 import org.junit.Before
@@ -27,7 +32,7 @@ class ReporteDaoTest {
 
     @Before
     fun crearBaseEnMemoria() {
-        val contexto = InstrumentationRegistry.getInstrumentation().targetContext
+        val contexto = ApplicationProvider.getApplicationContext<android.content.Context>()
         db = Room.inMemoryDatabaseBuilder(contexto, AppDatabase::class.java)
             .setDriver(BundledSQLiteDriver())
             .addMigrations(MIGRATION_1_2)

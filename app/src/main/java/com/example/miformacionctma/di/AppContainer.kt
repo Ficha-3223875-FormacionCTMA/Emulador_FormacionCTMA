@@ -3,6 +3,8 @@ package com.example.miformacionctma.di
 import android.content.Context
 import com.example.miformacionctma.data.local.AppDatabase
 import com.example.miformacionctma.data.preferences.PreferenciasRepository
+import com.example.miformacionctma.data.repository.ActividadRepository
+import com.example.miformacionctma.data.repository.RoomActividadRepository
 import com.example.miformacionctma.data.repository.ReporteRepository
 import com.example.miformacionctma.data.repository.RoomReporteRepository
 
@@ -22,6 +24,12 @@ class AppContainer(context: Context) {
         RoomReporteRepository(
             reporteDao = database.reporteDao(),
             categoriaDao = database.categoriaDao()
+        )
+    }
+
+    val actividadRepository: ActividadRepository by lazy {
+        RoomActividadRepository(
+            actividadDao = database.actividadDao()
         )
     }
 

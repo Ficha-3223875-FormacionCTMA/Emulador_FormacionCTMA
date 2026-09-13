@@ -5,8 +5,10 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
+import com.example.miformacionctma.data.local.dao.ActividadDao
 import com.example.miformacionctma.data.local.dao.CategoriaDao
 import com.example.miformacionctma.data.local.dao.ReporteDao
+import com.example.miformacionctma.data.local.entity.ActividadEntity
 import com.example.miformacionctma.data.local.entity.CategoriaEntity
 import com.example.miformacionctma.data.local.entity.ReporteEntity
 import kotlinx.coroutines.Dispatchers
@@ -17,14 +19,15 @@ import kotlinx.coroutines.Dispatchers
  * garantiza que todas las capas observen la misma fuente única de verdad.
  */
 @Database(
-    entities = [ReporteEntity::class, CategoriaEntity::class],
-    version = 2,
+    entities = [ReporteEntity::class, CategoriaEntity::class, ActividadEntity::class],
+    version = 3,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun reporteDao(): ReporteDao
     abstract fun categoriaDao(): CategoriaDao
+    abstract fun actividadDao(): ActividadDao
 
     companion object {
         private const val NOMBRE_BASE_DATOS = "miformacionctma.db"
@@ -48,7 +51,7 @@ abstract class AppDatabase : RoomDatabase() {
                 // SQLite del dispositivo.
                 .setDriver(BundledSQLiteDriver())
                 .setQueryCoroutineContext(Dispatchers.IO)
-                .addMigrations(MIGRATION_1_2)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                 .build()
     }
 }
