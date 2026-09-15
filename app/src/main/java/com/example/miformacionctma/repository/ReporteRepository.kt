@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.map
 interface ReporteRepository {
     val reportes: Flow<List<ActividadFormativa>>
     suspend fun agregar(reporte: ActividadFormativa)
+    suspend fun actualizar(reporte: ActividadFormativa)
 }
 
 class RoomReporteRepository(
@@ -23,5 +24,9 @@ class RoomReporteRepository(
 
     override suspend fun agregar(reporte: ActividadFormativa) {
         db.reporteDao().insertar(reporte.toReporteEntity())
+    }
+
+    override suspend fun actualizar(reporte: ActividadFormativa) {
+        db.reporteDao().actualizar(reporte.toReporteEntity())
     }
 }

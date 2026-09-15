@@ -7,12 +7,22 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
@@ -26,7 +36,8 @@ import com.example.miformacionctma.ui.theme.MiFormacionCTMATheme
 
 @Composable
 fun TarjetaActividad(
-    actividad: ActividadFormativa
+    actividad: ActividadFormativa,
+    onCompletarClick: () -> Unit = {}
 ) {
 
     Card(
@@ -70,9 +81,34 @@ fun TarjetaActividad(
                 modifier = Modifier.height(12.dp)
             )
 
-            EtiquetaEstado(
-                estado = actividad.estado
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                EtiquetaEstado(
+                    estado = actividad.estado
+                )
+
+                if (actividad.estado != "Completada") {
+                    Button(
+                        onClick = onCompletarClick,
+                        modifier = Modifier.height(32.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF1E7B34)
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Text("Listar", style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+            }
 
             Spacer(
                 modifier = Modifier.height(8.dp)

@@ -21,6 +21,8 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.room.Room
 import com.example.miformacionctma.data.local.AppDatabase
+import com.example.miformacionctma.data.preferences.UserPreferencesRepository
+import com.example.miformacionctma.model.ActividadFormativa
 import com.example.miformacionctma.repository.ReporteRepository
 import com.example.miformacionctma.repository.RoomReporteRepository
 import com.example.miformacionctma.ui.screens.CrearReporteScreen
@@ -28,38 +30,61 @@ import com.example.miformacionctma.ui.screens.PantallaActividades
 import com.example.miformacionctma.ui.screens.actividadesEjemplo
 import com.example.miformacionctma.ui.theme.MiFormacionCTMATheme
 import com.example.miformacionctma.viewmodel.CrearReporteViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-class PantallaActividadesViewModel(
-    repository: ReporteRepository
-) : ViewModel() {
-    private val _filtroSeleccionado = MutableStateFlow("Todas")
-    val filtroSeleccionado: StateFlow<String> = _filtroSeleccionado
+sealed interface PantallaActividadesUiState {
+    object Cargando : PantallaActividadesUiState
+    data class Exito(
+        val actividades: List<ActividadFormativa>,
+        val filtro: String
+    ) : PantallaActividadesUiState
+    data class Error(val mensaje: String) : PantallaActividadesUiState
+}
 
-    val actividadesFiltradas = combine(
+class PantallaActividadesViewModel(
+    private val repository: ReporteRepository,
+    private val preferences: UserPreferencesRepository
+) : ViewModel() {
+
+    val uiState: StateFlow<PantallaActividadesUiState> = combine(
         repository.reportes,
-        _filtroSeleccionado
+        preferences.filtroEstado
     ) { reportes, filtro ->
-        when (filtro) {
+        val filtradas = when (filtro) {
             "Completadas" -> reportes.filter { it.estado == "Completada" }
             "En proceso" -> reportes.filter { it.estado == "En proceso" }
             "Pendientes" -> reportes.filter { it.estado == "Pendiente" }
             else -> reportes
         }
+        PantallaActividadesUiState.Exito(filtradas, filtro) as PantallaActividadesUiState
+    }.catch {
+        emit(PantallaActividadesUiState.Error("Error al cargar datos"))
     }.stateIn(
         scope = viewModelScope,
-        started = SharingStarted.Eagerly,
-        initialValue = emptyList()
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = PantallaActividadesUiState.Cargando
     )
 
     fun cambiarFiltro(nuevoFiltro: String) {
-        _filtroSeleccionado.value = nuevoFiltro
+        viewModelScope.launch {
+            preferences.guardarFiltro(nuevoFiltro)
+        }
+    }
+
+    fun completarActividad(actividad: ActividadFormativa) {
+        viewModelScope.launch {
+            val actualizada = actividad.copy(
+                estado = "Completada",
+                progreso = 100
+            )
+            repository.actualizar(actualizada)
+        }
     }
 }
 
@@ -75,6 +100,10 @@ class MainActivity : ComponentActivity() {
 
     private val repository by lazy {
         RoomReporteRepository(database)
+    }
+
+    private val preferences by lazy {
+        UserPreferencesRepository(applicationContext)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -102,7 +131,7 @@ class MainActivity : ComponentActivity() {
                     override fun <T : ViewModel> create(modelClass: Class<T>): T {
                         return when {
                             modelClass.isAssignableFrom(PantallaActividadesViewModel::class.java) -> {
-                                PantallaActividadesViewModel(repository) as T
+                                PantallaActividadesViewModel(repository, preferences) as T
                             }
                             modelClass.isAssignableFrom(CrearReporteViewModel::class.java) -> {
                                 CrearReporteViewModel(repository) as T
@@ -116,13 +145,9 @@ class MainActivity : ComponentActivity() {
                     when (pantallaActual) {
                         "LISTA" -> {
                             val actividadesViewModel: PantallaActividadesViewModel = viewModel(factory = viewModelFactory)
-                            val listaActividades by actividadesViewModel.actividadesFiltradas.collectAsState()
-                            val filtroSeleccionado by actividadesViewModel.filtroSeleccionado.collectAsState()
-
+                            
                             PantallaActividades(
-                                actividades = listaActividades,
-                                filtroSeleccionado = filtroSeleccionado,
-                                onFiltroSeleccionado = { actividadesViewModel.cambiarFiltro(it) },
+                                viewModel = actividadesViewModel,
                                 modifier = Modifier.padding(innerPadding)
                             )
                         }

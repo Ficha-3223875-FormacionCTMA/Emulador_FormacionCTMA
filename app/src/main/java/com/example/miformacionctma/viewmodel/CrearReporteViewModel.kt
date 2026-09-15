@@ -13,10 +13,17 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+sealed interface OperacionEstado {
+    object Inactiva : OperacionEstado
+    object EnCurso : OperacionEstado
+    object Exitosa : OperacionEstado
+    data class Fallida(val mensaje: String) : OperacionEstado
+}
+
 data class CrearUiState(
     val titulo: String = "",
     val errorTitulo: String? = null,
-    val guardando: Boolean = false,
+    val operacion: OperacionEstado = OperacionEstado.Inactiva,
     val guardadoId: Int? = null
 )
 
@@ -74,13 +81,19 @@ class CrearReporteViewModel(
         )
 
         _uiState.update {
-            it.copy(guardando = true, errorTitulo = null)
+            it.copy(operacion = OperacionEstado.EnCurso, errorTitulo = null)
         }
 
         viewModelScope.launch {
-            repository.agregar(reporte)
-            _uiState.update {
-                it.copy(guardando = false, guardadoId = 0)
+            try {
+                repository.agregar(reporte)
+                _uiState.update {
+                    it.copy(operacion = OperacionEstado.Exitosa, guardadoId = 0)
+                }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(operacion = OperacionEstado.Fallida("Error al guardar"))
+                }
             }
         }
     }

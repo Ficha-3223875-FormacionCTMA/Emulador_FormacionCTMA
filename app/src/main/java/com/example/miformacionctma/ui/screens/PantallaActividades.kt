@@ -4,14 +4,15 @@ package com.example.miformacionctma.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -25,9 +26,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -37,54 +35,79 @@ import com.example.miformacionctma.ui.theme.MiFormacionCTMATheme
 import com.example.miformacionctma.uii.components.TarjetaActividad
 
 
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.miformacionctma.PantallaActividadesUiState
+import com.example.miformacionctma.PantallaActividadesViewModel
+
 @Composable
 fun PantallaActividades(
-    actividades: List<ActividadFormativa> = actividadesEjemplo,
-    filtroSeleccionado: String = "Todas",
-    onFiltroSeleccionado: (String) -> Unit = {},
+    viewModel: PantallaActividadesViewModel,
     modifier: Modifier = Modifier
 ) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
     Scaffold(
         modifier = modifier,
         topBar = {
-
             TopAppBar(
                 title = {
                     Text("Mi Formación CTMA")
                 }
             )
         }
-
     ) { paddingValues ->
-
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-
-            EncabezadoYFiltros(
-                filtroSeleccionado = filtroSeleccionado,
-                onFiltroSeleccionado = onFiltroSeleccionado,
-                cantidadActividades = actividades.size
-            )
-
-            if (actividades.isEmpty()) {
-
-                EstadoVacio(
-                    modifier = Modifier
-                        .fillMaxSize()
-                )
-
-            } else {
-
-                // Siempre mostramos dos columnas,
-                // sin importar el ancho de pantalla.
-                CuadriculaActividades(
-                    actividades = actividades,
-                    modifier = Modifier.weight(1f)
-                )
+            when (val state = uiState) {
+                is PantallaActividadesUiState.Cargando -> {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                }
+                is PantallaActividadesUiState.Exito -> {
+                    ContenidoActividades(
+                        actividades = state.actividades,
+                        filtroSeleccionado = state.filtro,
+                        onFiltroSeleccionado = { viewModel.cambiarFiltro(it) },
+                        onCompletarActividad = { viewModel.completarActividad(it) }
+                    )
+                }
+                is PantallaActividadesUiState.Error -> {
+                    Text(
+                        text = state.mensaje,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
             }
+        }
+    }
+}
+
+@Composable
+fun ContenidoActividades(
+    actividades: List<ActividadFormativa>,
+    filtroSeleccionado: String,
+    onFiltroSeleccionado: (String) -> Unit,
+    onCompletarActividad: (ActividadFormativa) -> Unit
+) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        EncabezadoYFiltros(
+            filtroSeleccionado = filtroSeleccionado,
+            onFiltroSeleccionado = onFiltroSeleccionado,
+            cantidadActividades = actividades.size
+        )
+
+        if (actividades.isEmpty()) {
+            EstadoVacio(modifier = Modifier.fillMaxSize())
+        } else {
+            CuadriculaActividades(
+                actividades = actividades,
+                onCompletarClick = onCompletarActividad,
+                modifier = Modifier.weight(1f)
+            )
         }
     }
 }
@@ -224,6 +247,7 @@ fun EncabezadoYFiltros(
 @Composable
 fun ListaActividades(
     actividades: List<ActividadFormativa>,
+    onCompletarClick: (ActividadFormativa) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
 
@@ -255,7 +279,8 @@ fun ListaActividades(
             ) { actividad ->
 
                 TarjetaActividad(
-                    actividad = actividad
+                    actividad = actividad,
+                    onCompletarClick = { onCompletarClick(actividad) }
                 )
             }
         }
@@ -269,6 +294,7 @@ fun ListaActividades(
 @Composable
 fun CuadriculaActividades(
     actividades: List<ActividadFormativa>,
+    onCompletarClick: (ActividadFormativa) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
 
@@ -304,7 +330,8 @@ fun CuadriculaActividades(
             ) { actividad ->
 
                 TarjetaActividad(
-                    actividad = actividad
+                    actividad = actividad,
+                    onCompletarClick = { onCompletarClick(actividad) }
                 )
             }
         }
@@ -491,7 +518,12 @@ fun PantallaActividadesPreview() {
 
     MiFormacionCTMATheme {
 
-        PantallaActividades()
+        ContenidoActividades(
+            actividades = actividadesEjemplo,
+            filtroSeleccionado = "Todas",
+            onFiltroSeleccionado = {},
+            onCompletarActividad = {}
+        )
     }
 }
 
@@ -510,7 +542,12 @@ fun PantallaActividadesAnchaPreview() {
 
     MiFormacionCTMATheme {
 
-        PantallaActividades()
+        ContenidoActividades(
+            actividades = actividadesEjemplo,
+            filtroSeleccionado = "Todas",
+            onFiltroSeleccionado = {},
+            onCompletarActividad = {}
+        )
     }
 }
 
