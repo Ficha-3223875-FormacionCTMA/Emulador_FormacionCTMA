@@ -1,25 +1,34 @@
 package com.example.miformacionctma.data.local
 
 import androidx.room.*
-import com.example.miformacionctma.model.ActividadFormativa
 import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ActividadDao {
-    // Al retornar Flow, Room notifica automáticamente cuando los datos cambian (CA-02)
+    // Consulta reactiva filtrando por query sobre la columna 'nombre'
     @Query("""
         SELECT * FROM actividades 
-        WHERE (:filtro = '' OR competencia = :filtro)
-        AND (:query = '' OR nombre LIKE '%' || :query || '%')
-        ORDER BY 
-            CASE WHEN :orden = 'ASC' THEN nombre END ASC,
-            CASE WHEN :orden = 'DESC' THEN nombre END DESC
+        WHERE (:query = '' OR nombre LIKE '%' || :query || '%')
+        ORDER BY nombre ASC
     """)
-    fun obtenerActividades(filtro: String, orden: String, query: String): Flow<List<ActividadFormativa>>
+    fun obtenerActividades(query: String): Flow<List<ActividadEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertar(actividad: ActividadFormativa)
+    suspend fun insertarTodas(actividades: List<ActividadEntity>)
+
+    @Query("DELETE FROM actividades")
+    suspend fun limpiarTabla()
+
+    // Sincronización atómica para la red
+    @Transaction
+    suspend fun sincronizarActividades(actividades: List<ActividadEntity>) {
+        limpiarTabla()
+        insertarTodas(actividades)
+    }
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertar(actividad: ActividadEntity)
 
     @Delete
-    suspend fun eliminar(actividad: ActividadFormativa)
+    suspend fun eliminar(actividad: ActividadEntity)
 }

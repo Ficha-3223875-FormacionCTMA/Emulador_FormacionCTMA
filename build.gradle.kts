@@ -2,4 +2,10 @@
 plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.kotlin.compose) apply false
+
+    // KSP para el procesador de anotaciones de Room (Guía 6)
+    id("com.google.devtools.ksp") version "2.0.21-1.0.27" apply false
+
+    // KotlinX Serialization para Retrofit / API (Guía 8)
+    id("org.jetbrains.kotlin.plugin.serialization") version "2.0.21" apply false
 }

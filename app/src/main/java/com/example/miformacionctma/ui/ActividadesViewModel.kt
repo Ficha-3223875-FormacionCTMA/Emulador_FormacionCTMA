@@ -7,6 +7,7 @@ import com.example.miformacionctma.data.repository.ActividadRepository
 import com.example.miformacionctma.model.ActividadFormativa
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -22,7 +23,13 @@ class ActividadesViewModel(
     private val _operacionState = MutableStateFlow<OperacionUiState>(OperacionUiState.Inactiva)
     val operacionState: StateFlow<OperacionUiState> = _operacionState.asStateFlow()
 
-    // Evento de refresco/reintento para la UI (CA-05)
+    // Estado para controlar el proceso de sincronización con la API
+    private val _refreshState = MutableStateFlow<RefreshUiState>(RefreshUiState.Inactivo)
+    val refreshState: StateFlow<RefreshUiState> = _refreshState.asStateFlow()
+
+    private var refreshJob: Job? = null
+
+    // Evento de refresco/reintento para la UI
     private val _refrescarTrigger = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
 
     val uiState: StateFlow<ListadoUiState> = combine(
@@ -33,7 +40,7 @@ class ActividadesViewModel(
     ) { filtro, orden, query, _ ->
         Triple(filtro, orden, query)
     }.flatMapLatest { (filtro, orden, query) ->
-        // Búsqueda cancelable automática al escribir rápido (CA-04)
+        // Búsqueda cancelable automática
         repository.obtenerActividades(filtro, orden, query)
     }.map { lista ->
         if (lista.isEmpty()) ListadoUiState.Vacio else ListadoUiState.Contenido(lista)
@@ -42,7 +49,7 @@ class ActividadesViewModel(
         emit(ListadoUiState.Error(throwable.localizedMessage ?: "Error inesperado"))
     }.stateIn(
         scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5_000), // Mantiene 5 al rotar (CA-07)
+        started = SharingStarted.WhileSubscribed(5_000),
         initialValue = ListadoUiState.Cargando
     )
 
@@ -50,8 +57,26 @@ class ActividadesViewModel(
         _busquedaQuery.value = nuevaBusqueda
     }
 
+    // Sincronización cancelable con el servidor (Retrofit -> Room)
+    fun sincronizarConServidor() {
+        refreshJob?.cancel()
+        refreshJob = viewModelScope.launch {
+            _refreshState.value = RefreshUiState.Sincronizando
+            val result = repository.refreshActividades()
+            result.fold(
+                onSuccess = {
+                    _refreshState.value = RefreshUiState.Exitoso()
+                },
+                onFailure = { error ->
+                    _refreshState.value = RefreshUiState.Error(error.localizedMessage ?: "Error de sincronización")
+                }
+            )
+        }
+    }
+
     fun reintentar() {
         _refrescarTrigger.tryEmit(Unit)
+        sincronizarConServidor()
     }
 
     fun guardarActividad(actividad: ActividadFormativa) {
@@ -82,5 +107,9 @@ class ActividadesViewModel(
 
     fun resetOperacionState() {
         _operacionState.value = OperacionUiState.Inactiva
+    }
+
+    fun resetRefreshState() {
+        _refreshState.value = RefreshUiState.Inactivo
     }
 }

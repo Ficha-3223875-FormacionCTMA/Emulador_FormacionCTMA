@@ -29,7 +29,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
@@ -57,13 +56,19 @@ class MainActivity : ComponentActivity() {
                 val viewModel: ActividadesViewModel = viewModel(
                     factory = object : ViewModelProvider.Factory {
                         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                            // Implementación funcional del repositorio de actividades
+                            // Implementación funcional completa del repositorio de actividades
                             val repository = object : ActividadRepository {
                                 override fun obtenerActividades(
                                     filtro: String,
                                     orden: String,
                                     busqueda: String
                                 ): Flow<List<ActividadFormativa>> = flowOf(actividades)
+
+                                override fun obtenerActividadesLocal(
+                                    busqueda: String
+                                ): Flow<List<ActividadFormativa>> = flowOf(actividades)
+
+                                override suspend fun refreshActividades(): Result<Unit> = Result.success(Unit)
 
                                 override suspend fun insertarActividad(actividad: ActividadFormativa) {}
                                 override suspend fun eliminarActividad(actividad: ActividadFormativa) {}
@@ -109,7 +114,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-// Las 10 actividades ajustadas a la firma (id, tituló, fecha, estado, progreso)
+// Las 10 actividades ajustadas a la firma (id, título, fecha, estado, progreso)
 val actividades = listOf(
     ActividadFormativa(
         id = 1,
@@ -183,8 +188,6 @@ val actividades = listOf(
     )
 )
 
-
-// Pantalla principal original intacta
 @Composable
 fun PantallaFormacion(
     lista: List<ActividadFormativa> = actividades
@@ -250,7 +253,6 @@ fun PantallaFormacion(
     }
 }
 
-// Encabezado original
 @Composable
 fun Encabezado(
     cantidad: Int
@@ -283,8 +285,6 @@ fun Encabezado(
     }
 }
 
-// Tarjeta individual original
-// Tarjeta individual original (con ID visible)
 @Composable
 fun Tarjeta(
     actividad: ActividadFormativa
@@ -304,7 +304,6 @@ fun Tarjeta(
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
-            // ---> AQUÍ VA EL ID DE LA ACTIVIDAD <---
             Text(
                 text = "ID: ${actividad.id}",
                 style = MaterialTheme.typography.labelMedium,
@@ -328,13 +327,8 @@ fun Tarjeta(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(
-                    text = "Fecha"
-                )
-
-                Text(
-                    text = actividad.fecha
-                )
+                Text(text = "Fecha")
+                Text(text = actividad.fecha)
             }
 
             Spacer(
@@ -345,13 +339,8 @@ fun Tarjeta(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(
-                    text = "Estado"
-                )
-
-                Text(
-                    text = actividad.estado
-                )
+                Text(text = "Estado")
+                Text(text = actividad.estado)
             }
 
             Spacer(
@@ -374,7 +363,6 @@ fun Tarjeta(
     }
 }
 
-// Estado vacío original
 @Composable
 fun MensajeSinActividades() {
     Box(

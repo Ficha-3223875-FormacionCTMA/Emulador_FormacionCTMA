@@ -1,7 +1,12 @@
 package com.example.miformacionctma
 
+import com.example.miformacionctma.data.dto.ActividadDto
+import com.example.miformacionctma.data.local.ActividadDao
+import com.example.miformacionctma.data.network.ApiService
+import com.example.miformacionctma.data.network.RemoteActividadDataSource
 import com.example.miformacionctma.data.preferences.PreferenciasRepository
 import com.example.miformacionctma.data.repository.ActividadRepository
+import com.example.miformacionctma.data.repository.ActividadRepositoryImpl
 import com.example.miformacionctma.model.ActividadFormativa
 import com.example.miformacionctma.ui.ActividadesViewModel
 import com.example.miformacionctma.ui.ListadoUiState
@@ -10,26 +15,41 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.*
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.After
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
+import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import retrofit2.Response
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ActividadesUnitTest {
 
     private lateinit var listaActividades: List<ActividadFormativa>
 
-    // Dispatcher y Mocks para pruebas deterministas de Corrutinas (CA-08)
+    // Dispatcher y Mocks para pruebas deterministas de Corrutinas
     private val testDispatcher = StandardTestDispatcher()
     private val repository: ActividadRepository = mock()
     private val preferenciasRepository: PreferenciasRepository = mock()
 
+    // Dobles de prueba para la capa de red y persistencia
+    private val apiService: ApiService = mock()
+    private val daoMock: ActividadDao = mock()
+    private lateinit var repositoryNetworkImpl: ActividadRepositoryImpl
+
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
+
+        repositoryNetworkImpl = ActividadRepositoryImpl(
+            daoMock,
+            RemoteActividadDataSource(apiService)
+        )
 
         listaActividades = listOf(
             ActividadFormativa(1, "Scrum", "Desc 1", "11 de agosto", "Completada", 100),
@@ -42,34 +62,13 @@ class ActividadesUnitTest {
                 100
             ),
             ActividadFormativa(3, "Principios Ágiles", "Desc 3", "13 de agosto", "Completada", 100),
-            ActividadFormativa(
-                4,
-                "Introducción a Scrum",
-                "Desc 4",
-                "14 de agosto",
-                "En proceso",
-                75
-            ),
+            ActividadFormativa(4, "Introducción a Scrum", "Desc 4", "14 de agosto", "En proceso", 75),
             ActividadFormativa(5, "Roles de Scrum", "Desc 5", "15 de agosto", "En proceso", 60),
-            ActividadFormativa(
-                6,
-                "Artefactos de Scrum",
-                "Desc 6",
-                "16 de agosto",
-                "En proceso",
-                50
-            ),
+            ActividadFormativa(6, "Artefactos de Scrum", "Desc 6", "16 de agosto", "En proceso", 50),
             ActividadFormativa(7, "Pruebas de software", "Desc 7", "17 de agosto", "Pendiente", 0),
             ActividadFormativa(8, "Tipos de pruebas", "Desc 8", "18 de agosto", "Pendiente", 0),
             ActividadFormativa(9, "Jetpack Compose", "Desc 9", "19 de agosto", "Pendiente", 0),
-            ActividadFormativa(
-                10,
-                "Proyecto Mi Formación CTMA",
-                "Desc 10",
-                "20 de agosto",
-                "Pendiente",
-                0
-            )
+            ActividadFormativa(10, "Proyecto Mi Formación CTMA", "Desc 10", "20 de agosto", "Pendiente", 0)
         )
     }
 
@@ -160,7 +159,7 @@ class ActividadesUnitTest {
     }
 
     // ==========================================
-    // BLOQUE 4: CORRUTINAS Y STATEFLOW (GUÍA 7)
+    // BLOQUE 4: CORRUTINAS Y STATEFLOW
     // ==========================================
 
     @Test
@@ -175,7 +174,7 @@ class ActividadesUnitTest {
             viewModel.uiState.collect {}
         }
 
-        advanceUntilIdle() // <-- Avanza las corrutinas pendientes para procesar el Flow
+        advanceUntilIdle()
 
         Assert.assertEquals(ListadoUiState.Vacio, viewModel.uiState.value)
         collector.cancel()
@@ -193,11 +192,50 @@ class ActividadesUnitTest {
             viewModel.uiState.collect {}
         }
 
-        advanceUntilIdle() // <-- Avanza las corrutinas pendientes para procesar el Flow
+        advanceUntilIdle()
 
         val estadoActual = viewModel.uiState.value
         Assert.assertTrue(estadoActual is ListadoUiState.Contenido)
         Assert.assertEquals(10, (estadoActual as ListadoUiState.Contenido).actividades.size)
         collector.cancel()
+    }
+
+    // ==========================================
+    // BLOQUE 5: RED Y SERVIDOR HTTP
+    // ==========================================
+
+    @Test
+    fun refresh_respuesta200_sincronizaBaseDeDatosLocal() = runTest {
+        val dtoList = listOf(
+            ActividadDto(
+                id = "1",
+                titulo = "Prueba Servicio",
+                descripcion = "Desc",
+                competencia = "ADSO",
+                fechaEntrega = "2026-09-30"
+            )
+        )
+        whenever(apiService.getActividades()).thenReturn(Response.success(dtoList))
+
+        val result = repositoryNetworkImpl.refreshActividades()
+
+        Assert.assertTrue("La respuesta 200 debe ser exitosa", result.isSuccess)
+        verify(daoMock).sincronizarActividades(any())
+    }
+
+    @Test
+    fun refresh_respuesta401_retornaFalloYMensajeSesion() = runTest {
+        val errorResponseBody = "{\"error\": \"Unauthorized\"}"
+            .toResponseBody("application/json".toMediaType())
+
+        whenever(apiService.getActividades()).thenReturn(Response.error(401, errorResponseBody))
+
+        val result = repositoryNetworkImpl.refreshActividades()
+
+        Assert.assertTrue("La respuesta 401 debe retornar un Result.failure", result.isFailure)
+        Assert.assertEquals(
+            "Sesión vencida (401). Inicie sesión de nuevo.",
+            result.exceptionOrNull()?.message
+        )
     }
 }
