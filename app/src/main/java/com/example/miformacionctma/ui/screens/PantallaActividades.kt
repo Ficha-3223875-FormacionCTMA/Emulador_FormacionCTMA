@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -22,6 +23,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -39,6 +41,55 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.miformacionctma.PantallaActividadesUiState
 import com.example.miformacionctma.PantallaActividadesViewModel
+import com.example.miformacionctma.SyncState
+
+@Composable
+fun SyncStatusIndicator(
+    state: SyncState,
+    onRetry: () -> Unit
+) {
+    when (state) {
+        is SyncState.Cargando -> {
+            Surface(
+                color = MaterialTheme.colorScheme.secondaryContainer,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "Sincronizando con el servidor...",
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.padding(8.dp)
+                )
+            }
+        }
+        is SyncState.Error -> {
+            Surface(
+                color = MaterialTheme.colorScheme.errorContainer,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = state.mensaje,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Button(
+                        onClick = onRetry,
+                        modifier = Modifier.height(28.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                    ) {
+                        Text("Reintentar", style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+            }
+        }
+        else -> {} 
+    }
+}
 
 @Composable
 fun PantallaActividades(
@@ -67,12 +118,19 @@ fun PantallaActividades(
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 }
                 is PantallaActividadesUiState.Exito -> {
-                    ContenidoActividades(
-                        actividades = state.actividades,
-                        filtroSeleccionado = state.filtro,
-                        onFiltroSeleccionado = { viewModel.cambiarFiltro(it) },
-                        onCompletarActividad = { viewModel.completarActividad(it) }
-                    )
+                    Column {
+                        SyncStatusIndicator(
+                            state = state.syncState,
+                            onRetry = { viewModel.sincronizar() }
+                        )
+                        ContenidoActividades(
+                            actividades = state.actividades,
+                            filtroSeleccionado = state.filtro,
+                            onFiltroSeleccionado = { viewModel.cambiarFiltro(it) },
+                            onCompletarActividad = { viewModel.completarActividad(it) },
+                            onRefresh = { viewModel.sincronizar() }
+                        )
+                    }
                 }
                 is PantallaActividadesUiState.Error -> {
                     Text(
@@ -91,7 +149,8 @@ fun ContenidoActividades(
     actividades: List<ActividadFormativa>,
     filtroSeleccionado: String,
     onFiltroSeleccionado: (String) -> Unit,
-    onCompletarActividad: (ActividadFormativa) -> Unit
+    onCompletarActividad: (ActividadFormativa) -> Unit,
+    onRefresh: () -> Unit
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         EncabezadoYFiltros(
@@ -101,7 +160,10 @@ fun ContenidoActividades(
         )
 
         if (actividades.isEmpty()) {
-            EstadoVacio(modifier = Modifier.fillMaxSize())
+            EstadoVacio(
+                onActualizarClick = onRefresh,
+                modifier = Modifier.fillMaxSize()
+            )
         } else {
             CuadriculaActividades(
                 actividades = actividades,
@@ -367,6 +429,7 @@ fun SinResultados(
  */
 @Composable
 fun EstadoVacio(
+    onActualizarClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
 
@@ -397,7 +460,7 @@ fun EstadoVacio(
 
             Button(
 
-                onClick = {},
+                onClick = onActualizarClick,
 
                 modifier = Modifier.padding(top = 16.dp)
             ) {
@@ -522,7 +585,8 @@ fun PantallaActividadesPreview() {
             actividades = actividadesEjemplo,
             filtroSeleccionado = "Todas",
             onFiltroSeleccionado = {},
-            onCompletarActividad = {}
+            onCompletarActividad = {},
+            onRefresh = {}
         )
     }
 }
@@ -546,7 +610,8 @@ fun PantallaActividadesAnchaPreview() {
             actividades = actividadesEjemplo,
             filtroSeleccionado = "Todas",
             onFiltroSeleccionado = {},
-            onCompletarActividad = {}
+            onCompletarActividad = {},
+            onRefresh = {}
         )
     }
 }
@@ -564,6 +629,7 @@ fun EstadoVacioPreview() {
     MiFormacionCTMATheme {
 
         EstadoVacio(
+            onActualizarClick = {},
             modifier = Modifier.fillMaxSize()
         )
     }
