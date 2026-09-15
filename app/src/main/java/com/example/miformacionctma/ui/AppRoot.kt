@@ -18,17 +18,18 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.miformacionctma.PantallaInicio
 import com.example.miformacionctma.di.AppContainer
+import com.example.miformacionctma.ui.actividades.ActividadesViewModel
+import com.example.miformacionctma.ui.actividades.PantallaActividades
 import com.example.miformacionctma.ui.reportes.PantallaNuevoReporte
 import com.example.miformacionctma.ui.reportes.PantallaReportes
 import com.example.miformacionctma.ui.reportes.ReportesViewModel
 
-private enum class Destino { INICIO, REPORTES }
+private enum class Destino { INICIO, REPORTES, ACTIVIDADES }
 
 /**
  * Contenedor raíz de la app: conserva la pantalla teórica de semanas
  * anteriores (PantallaInicio) y agrega la nueva funcionalidad de
- * persistencia (Reportes) en una segunda pestaña, sin tocar código ya
- * entregado.
+ * persistencia (Reportes) y reactividad (Actividades).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,14 +51,35 @@ fun AppRoot(container: AppContainer) {
                     icon = { Icon(Icons.Filled.Assignment, contentDescription = null) },
                     label = { Text("Reportes") }
                 )
+                NavigationBarItem(
+                    selected = destino == Destino.ACTIVIDADES,
+                    onClick = { destino = Destino.ACTIVIDADES },
+                    icon = { Icon(Icons.Filled.Assignment, contentDescription = null) },
+                    label = { Text("Actividades") }
+                )
             }
         }
     ) { padding ->
         when (destino) {
             Destino.INICIO -> PantallaInicio(nombre = "Aprendiz")
             Destino.REPORTES -> SeccionReportes(container)
+            Destino.ACTIVIDADES -> SeccionActividades(container)
         }
     }
+}
+
+@Composable
+private fun SeccionActividades(container: AppContainer) {
+    val viewModel: ActividadesViewModel = viewModel(factory = ActividadesViewModel.factory(container))
+    val uiState by viewModel.uiState.collectAsState()
+
+    PantallaActividades(
+        uiState = uiState,
+        onCambiarOrden = viewModel::onCambiarOrdenProgreso,
+        onFiltrarEstado = viewModel::onFiltrarEstado,
+        onGuardarActividad = viewModel::guardarActividad,
+        onEliminarActividad = viewModel::eliminarActividad
+    )
 }
 
 @Composable

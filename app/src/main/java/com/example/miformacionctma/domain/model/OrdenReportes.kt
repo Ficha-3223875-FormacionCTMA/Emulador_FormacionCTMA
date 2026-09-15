@@ -18,5 +18,7 @@ enum class OrdenReportes {
 /** Agrupa las preferencias persistentes que interesan a la pantalla de reportes. */
 data class PreferenciasUsuario(
     val orden: OrdenReportes = OrdenReportes.FECHA_DESC,
-    val categoriaFiltroId: Long? = null
+    val categoriaFiltroId: Long? = null,
+    val actividadesFiltroEstado: String? = null,
+    val actividadesOrdenDesc: Boolean = true
 )

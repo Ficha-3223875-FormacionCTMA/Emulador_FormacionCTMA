@@ -8,44 +8,85 @@ import com.example.miformacionctma.di.AppContainer
 import com.example.miformacionctma.domain.model.Actividad
 import com.example.miformacionctma.domain.model.EstadoActividad
 import com.example.miformacionctma.data.repository.ActividadRepository
+import com.example.miformacionctma.data.preferences.PreferenciasRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ActividadesViewModel(
-    private val repository: ActividadRepository
+    private val repository: ActividadRepository,
+    private val preferenciasRepository: PreferenciasRepository
 ) : ViewModel() {
 
-    private val _filtroEstado = MutableStateFlow<EstadoActividad?>(null)
-    private val _ordenProgresoDesc = MutableStateFlow(true)
     private val _totalActividades = MutableStateFlow(0)
+    private val _estadoOperacion = MutableStateFlow(EstadoOperacionActividades.INACTIVA)
+    private val _errorMensaje = MutableStateFlow<String?>(null)
+
+    private data class ParamsActividades(
+        val prefs: com.example.miformacionctma.domain.model.PreferenciasUsuario,
+        val total: Int,
+        val operacion: EstadoOperacionActividades,
+        val errorMsg: String?
+    )
 
     val uiState: StateFlow<ActividadesUiState> = combine(
-        _filtroEstado,
-        _ordenProgresoDesc,
-        _totalActividades
-    ) { filtro, orden, total ->
-        Triple(filtro, orden, total)
-    }.flatMapLatest { (filtro, orden, total) ->
-        val flow = if (filtro != null) {
-            repository.observarPorEstado(filtro)
-        } else {
-            repository.observarOrdenadasPorProgreso(orden)
+        preferenciasRepository.preferencias,
+        _totalActividades,
+        _estadoOperacion,
+        _errorMensaje
+    ) { prefs, total, operacion, errorMsg ->
+        ParamsActividades(prefs, total, operacion, errorMsg)
+    }.flatMapLatest { params ->
+        val filtroEnum = params.prefs.actividadesFiltroEstado?.let {
+            try { EstadoActividad.valueOf(it) } catch (e: Exception) { null }
         }
+        val ordenDesc = params.prefs.actividadesOrdenDesc
+
+        val flow = if (filtroEnum != null) {
+            repository.observarPorEstado(filtroEnum)
+        } else {
+            repository.observarOrdenadasPorProgreso(ordenDesc)
+        }
+
         flow.map { list ->
+            val listaOrdenada = if (filtroEnum != null) {
+                if (ordenDesc) list.sortedByDescending { it.progreso } else list.sortedBy { it.progreso }
+            } else {
+                list
+            }
+
+            val pantallaFinal = if (listaOrdenada.isEmpty()) {
+                EstadoPantallaActividades.VACIO
+            } else {
+                EstadoPantallaActividades.CONTENIDO
+            }
+
             ActividadesUiState(
-                actividades = list,
-                totalActividades = total,
-                filtroEstado = filtro,
-                ordenProgresoDesc = orden,
-                cargando = false
+                actividades = listaOrdenada,
+                totalActividades = params.total,
+                filtroEstado = filtroEnum,
+                ordenProgresoDesc = ordenDesc,
+                estadoPantalla = pantallaFinal,
+                estadoOperacion = params.operacion,
+                errorMensaje = params.errorMsg
+            )
+        }.catch { e ->
+            emit(
+                ActividadesUiState(
+                    totalActividades = params.total,
+                    filtroEstado = filtroEnum,
+                    ordenProgresoDesc = ordenDesc,
+                    estadoPantalla = EstadoPantallaActividades.ERROR,
+                    estadoOperacion = params.operacion,
+                    errorMensaje = e.message ?: "Error desconocido"
+                )
             )
         }
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = ActividadesUiState(cargando = true)
+        initialValue = ActividadesUiState(estadoPantalla = EstadoPantallaActividades.CARGANDO)
     )
 
     init {
@@ -54,29 +95,59 @@ class ActividadesViewModel(
 
     fun actualizarTotal() {
         viewModelScope.launch {
-            _totalActividades.value = repository.contar()
+            try {
+                _totalActividades.value = repository.contar()
+            } catch (e: Exception) {
+                // Silencioso o registrado si falla el conteo inicial
+            }
         }
     }
 
     fun onCambiarOrdenProgreso() {
-        _ordenProgresoDesc.value = !_ordenProgresoDesc.value
+        viewModelScope.launch {
+            preferenciasRepository.actualizarActividadesOrdenDesc(!uiState.value.ordenProgresoDesc)
+        }
     }
 
     fun onFiltrarEstado(estado: EstadoActividad?) {
-        _filtroEstado.value = estado
+        viewModelScope.launch {
+            preferenciasRepository.actualizarActividadesFiltroEstado(estado?.name)
+        }
     }
-    
-    private var guardando = false
+
+    fun resetEstadoOperacion() {
+        _estadoOperacion.value = EstadoOperacionActividades.INACTIVA
+        _errorMensaje.value = null
+    }
 
     fun guardarActividad(actividad: Actividad) {
-        if (guardando) return
-        guardando = true
+        if (_estadoOperacion.value == EstadoOperacionActividades.EN_CURSO) return
+        _estadoOperacion.value = EstadoOperacionActividades.EN_CURSO
+        _errorMensaje.value = null
         viewModelScope.launch {
             try {
                 repository.guardar(actividad)
                 actualizarTotal()
-            } finally {
-                guardando = false
+                _estadoOperacion.value = EstadoOperacionActividades.EXITOSA
+            } catch (e: Exception) {
+                _errorMensaje.value = e.message ?: "Error al guardar actividad"
+                _estadoOperacion.value = EstadoOperacionActividades.FALLIDA
+            }
+        }
+    }
+
+    fun eliminarActividad(actividad: Actividad) {
+        if (_estadoOperacion.value == EstadoOperacionActividades.EN_CURSO) return
+        _estadoOperacion.value = EstadoOperacionActividades.EN_CURSO
+        _errorMensaje.value = null
+        viewModelScope.launch {
+            try {
+                repository.eliminar(actividad)
+                actualizarTotal()
+                _estadoOperacion.value = EstadoOperacionActividades.EXITOSA
+            } catch (e: Exception) {
+                _errorMensaje.value = e.message ?: "Error al eliminar actividad"
+                _estadoOperacion.value = EstadoOperacionActividades.FALLIDA
             }
         }
     }
@@ -84,7 +155,10 @@ class ActividadesViewModel(
     companion object {
         fun factory(container: AppContainer) = viewModelFactory {
             initializer {
-                ActividadesViewModel(repository = container.actividadRepository)
+                ActividadesViewModel(
+                    repository = container.actividadRepository,
+                    preferenciasRepository = container.preferenciasRepository
+                )
             }
         }
     }

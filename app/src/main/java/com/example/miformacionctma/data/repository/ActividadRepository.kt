@@ -4,8 +4,10 @@ import com.example.miformacionctma.data.local.dao.ActividadDao
 import com.example.miformacionctma.data.local.entity.ActividadEntity
 import com.example.miformacionctma.domain.model.Actividad
 import com.example.miformacionctma.domain.model.EstadoActividad
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 
 interface ActividadRepository {
     fun observarTodas(): Flow<List<Actividad>>
@@ -35,17 +37,20 @@ class RoomActividadRepository(
     override fun observarPorEstado(estado: EstadoActividad): Flow<List<Actividad>> =
         actividadDao.observarPorEstado(estado.name).map { list -> list.map { it.toDomain() } }
 
-    override suspend fun contar(): Int = actividadDao.contar()
+    override suspend fun contar(): Int = withContext(Dispatchers.IO) {
+        actividadDao.contar()
+    }
 
-    override suspend fun guardar(actividad: Actividad): Long =
+    override suspend fun guardar(actividad: Actividad): Long = withContext(Dispatchers.IO) {
         if (actividad.id == 0L) {
             actividadDao.insertar(actividad.toEntity())
         } else {
             actividadDao.actualizar(actividad.toEntity())
             actividad.id
         }
+    }
 
-    override suspend fun eliminar(actividad: Actividad) {
+    override suspend fun eliminar(actividad: Actividad) = withContext(Dispatchers.IO) {
         actividadDao.eliminar(actividad.toEntity())
     }
 }
