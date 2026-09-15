@@ -1,0 +1,78 @@
+{
+  "endpoint": "GET /actividades",
+  "descripcion": "Contrato JSON para la sincronización remota de actividades de Mi Formación CTMA.",
+  "schema": {
+    "id": "Long?",
+    "nombre": "String",
+    "descripcion": "String",
+    "progreso": "Int (0-100)",
+    "estado": "Enum (PENDIENTE, EN_PROCESO, COMPLETADA)",
+    "fechaCreacion": "Long?"
+  },
+  "casos_evidencia": [
+    {
+      "id": 101,
+      "nombre": "Configuración Retrofit",
+      "descripcion": "Implementar cliente HTTP",
+      "progreso": 100,
+      "estado": "COMPLETADA",
+      "fechaCreacion": 1694770000000
+    },
+    {
+      "id": 102,
+      "nombre": "Diseño de DTOs",
+      "descripcion": "Crear clases serializables",
+      "progreso": 85,
+      "estado": "EN_PROCESO",
+      "fechaCreacion": 1694770010000
+    },
+    {
+      "id": 103,
+      "nombre": "Manejo de Errores",
+      "descripcion": "Control de IOExceptions",
+      "progreso": 0,
+      "estado": "PENDIENTE",
+      "fechaCreacion": 1694770020000
+    },
+    {
+      "id": 104,
+      "nombre": "Pruebas de Red",
+      "descripcion": "Simular latencia y fallos",
+      "progreso": 50,
+      "estado": "EN_PROCESO",
+      "fechaCreacion": 1694770030000
+    },
+    {
+      "id": 105,
+      "nombre": "Persistencia SSOT",
+      "descripcion": "Room como fuente canónica",
+      "progreso": 100,
+      "estado": "COMPLETADA",
+      "fechaCreacion": 1694770040000
+    },
+    {
+      "id": 106,
+      "nombre": "UI Reactiva",
+      "descripcion": "Integración con StateFlow",
+      "progreso": 90,
+      "estado": "EN_PROCESO",
+      "fechaCreacion": 1694770050000
+    },
+    {
+      "id": 107,
+      "nombre": "Seguridad de Hilos",
+      "descripcion": "Uso de Dispatchers.IO",
+      "progreso": 100,
+      "estado": "COMPLETADA",
+      "fechaCreacion": 1694770060000
+    },
+    {
+      "id": 108,
+      "nombre": "Documentación Final",
+      "descripcion": "README y Contrato JSON",
+      "progreso": 10,
+      "estado": "PENDIENTE",
+      "fechaCreacion": 1694770070000
+    }
+  ]
+}

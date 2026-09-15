@@ -96,12 +96,42 @@ class ActividadesViewModelTest {
         assertEquals(1, repository.guardarLlamadas)
         assertEquals(EstadoOperacionActividades.EXITOSA, viewModel.uiState.value.estadoOperacion)
     }
+
+    @Test
+    fun sincronizarRemoto_conFalloDeRed_mantieneCacheYReportaError() = runTest {
+        backgroundScope.launch(testDispatcher) { viewModel.uiState.collect { } }
+        
+        // Simular fallo de red en el repositorio simulado
+        repository.debeFallarSincronizacion = true
+        
+        viewModel.sincronizarConServidorRemoto()
+        advanceUntilIdle()
+        
+        assertEquals(EstadoOperacionActividades.FALLIDA, viewModel.uiState.value.estadoOperacion)
+        assertEquals(true, viewModel.uiState.value.errorMensaje?.contains("Fallo de red"))
+    }
+
+    @Test
+    fun sincronizarRemoto_conExito_actualizaEstadoAExitoso() = runTest {
+        backgroundScope.launch(testDispatcher) { viewModel.uiState.collect { } }
+
+        // Caso servidor disponible
+        repository.debeFallarSincronizacion = false
+        
+        viewModel.sincronizarConServidorRemoto()
+        advanceUntilIdle()
+
+        assertEquals(EstadoOperacionActividades.EXITOSA, viewModel.uiState.value.estadoOperacion)
+        assertEquals(null, viewModel.uiState.value.errorMensaje)
+    }
 }
 
 class FakeActividadRepository : ActividadRepository {
     var total = 0
     var guardarLlamadas = 0
     var delayMillis = 0L
+    var sincronizacionesLlamadas = 0
+    var debeFallarSincronizacion = false
     private val flow = MutableStateFlow<List<Actividad>>(emptyList())
 
     fun emitir(lista: List<Actividad>) {
@@ -118,6 +148,11 @@ class FakeActividadRepository : ActividadRepository {
         return 0L
     }
     override suspend fun eliminar(actividad: Actividad) {}
+    
+    override suspend fun refrescarDesdeServidor() {
+        if (debeFallarSincronizacion) throw java.io.IOException("Fallo de red simulado")
+        sincronizacionesLlamadas++
+    }
 }
 
 class FakePreferenciasRepository : PreferenciasRepository() {

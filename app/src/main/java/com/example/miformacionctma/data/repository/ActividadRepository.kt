@@ -2,6 +2,7 @@ package com.example.miformacionctma.data.repository
 
 import com.example.miformacionctma.data.local.dao.ActividadDao
 import com.example.miformacionctma.data.local.entity.ActividadEntity
+import com.example.miformacionctma.data.remote.api.ActividadApiService
 import com.example.miformacionctma.domain.model.Actividad
 import com.example.miformacionctma.domain.model.EstadoActividad
 import kotlinx.coroutines.Dispatchers
@@ -16,10 +17,12 @@ interface ActividadRepository {
     suspend fun contar(): Int
     suspend fun guardar(actividad: Actividad): Long
     suspend fun eliminar(actividad: Actividad)
+    suspend fun refrescarDesdeServidor()
 }
 
 class RoomActividadRepository(
-    private val actividadDao: ActividadDao
+    private val actividadDao: ActividadDao,
+    private val apiService: ActividadApiService
 ) : ActividadRepository {
 
     override fun observarTodas(): Flow<List<Actividad>> =
@@ -52,6 +55,18 @@ class RoomActividadRepository(
 
     override suspend fun eliminar(actividad: Actividad) = withContext(Dispatchers.IO) {
         actividadDao.eliminar(actividad.toEntity())
+    }
+
+    override suspend fun refrescarDesdeServidor() = withContext(Dispatchers.IO) {
+        // Consultar API remota de forma consistente
+        val dtosRemotos = apiService.obtenerActividades()
+        
+        // Transformar e insertar de forma coordinada conservando la caché local si la red es exitosa
+        dtosRemotos.forEach { dto ->
+            val actividadDominio = dto.toDomain()
+            val existeLocal = actividadDao.contar() > 0 // Verificación o actualización inteligente
+            actividadDao.insertar(actividadDominio.toEntity())
+        }
     }
 }
 

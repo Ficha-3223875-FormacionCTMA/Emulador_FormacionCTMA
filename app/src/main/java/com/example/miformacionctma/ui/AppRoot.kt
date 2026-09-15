@@ -68,6 +68,7 @@ private fun SeccionActividades(container: AppContainer) {
         onCambiarOrden = viewModel::onCambiarOrdenProgreso,
         onFiltrarEstado = viewModel::onFiltrarEstado,
         onGuardarActividad = viewModel::guardarActividad,
-        onEliminarActividad = viewModel::eliminarActividad
+        onEliminarActividad = viewModel::eliminarActividad,
+        onSincronizarServidor = viewModel::sincronizarConServidorRemoto
     )
 }

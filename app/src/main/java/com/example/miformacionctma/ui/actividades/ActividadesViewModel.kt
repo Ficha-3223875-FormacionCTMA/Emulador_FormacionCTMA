@@ -135,6 +135,23 @@ class ActividadesViewModel(
         }
     }
 
+    fun sincronizarConServidorRemoto() {
+        _estadoOperacion.value = EstadoOperacionActividades.EN_CURSO
+        _errorMensaje.value = null
+        viewModelScope.launch {
+            try {
+                // Refresco cancelable de forma limpia desde viewModelScope (Criterio Semana 8)
+                repository.refrescarDesdeServidor()
+                actualizarTotal()
+                _estadoOperacion.value = EstadoOperacionActividades.EXITOSA
+            } catch (e: Exception) {
+                // Resiliencia: Conserva caché local ante fallos de red/timeout y comunica error amigable
+                _errorMensaje.value = "Fallo de red: Sin conexión o servidor no disponible. Mostrando datos locales de caché."
+                _estadoOperacion.value = EstadoOperacionActividades.FALLIDA
+            }
+        }
+    }
+
     fun actualizarTotal() {
         viewModelScope.launch {
             try {

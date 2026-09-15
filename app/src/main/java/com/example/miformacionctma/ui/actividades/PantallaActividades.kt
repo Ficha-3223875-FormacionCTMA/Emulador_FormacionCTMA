@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,7 +26,8 @@ fun PantallaActividades(
     onCambiarOrden: () -> Unit,
     onFiltrarEstado: (EstadoActividad?) -> Unit,
     onGuardarActividad: (Actividad) -> Unit,
-    onEliminarActividad: (Actividad) -> Unit
+    onEliminarActividad: (Actividad) -> Unit,
+    onSincronizarServidor: () -> Unit
 ) {
     var mostrarDialogoNueva by remember { mutableStateOf(false) }
 
@@ -34,10 +36,22 @@ fun PantallaActividades(
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        Text(
-            text = "Gestión de Actividades / Tareas",
-            style = MaterialTheme.typography.headlineSmall
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Gestión de Actividades / Tareas",
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.weight(1f)
+            )
+            
+            // Botón de sincronización con servidor REST amigable (Semana 8)
+            IconButton(onClick = onSincronizarServidor) {
+                Icon(Icons.Filled.Refresh, contentDescription = "Sincronizar Servidor")
+            }
+        }
         Spacer(modifier = Modifier.height(8.dp))
 
         // Fila de estado de operación básica sin alterar el diseño original
@@ -64,7 +78,11 @@ fun PantallaActividades(
 
         uiState.errorMensaje?.let { msg ->
             Spacer(modifier = Modifier.height(4.dp))
-            Text(text = "Error: $msg", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+            Text(
+                text = msg, 
+                color = if (uiState.estadoOperacion == EstadoOperacionActividades.FALLIDA) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline, 
+                style = MaterialTheme.typography.bodySmall
+            )
         }
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -112,7 +130,7 @@ fun PantallaActividades(
                 EstadoPantallaActividades.ERROR -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(
-                            text = "Error al cargar datos: ${uiState.errorMensaje ?: "Desconocido"}",
+                            text = "Error al cargar datos locales.",
                             color = MaterialTheme.colorScheme.error
                         )
                     }
