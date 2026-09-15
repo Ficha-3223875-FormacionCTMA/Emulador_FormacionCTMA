@@ -90,7 +90,49 @@ class ActividadesViewModel(
     )
 
     init {
-        actualizarTotal()
+        verificarYCrearActividadesSemilla()
+    }
+
+    private fun verificarYCrearActividadesSemilla() {
+        viewModelScope.launch {
+            try {
+                val cantidadActual = repository.contar()
+                if (cantidadActual == 0) {
+                    val nombresSemilla = listOf(
+                        "Configuración de Entorno", "Diseño de Interfaz", "Persistencia con Room",
+                        "Migración de Base de Datos", "Configuración de DataStore", "Concurrencia con Corrutinas",
+                        "Flujos Reactivos Asíncronos", "Integración de StateFlow", "Arquitectura Main-Safe",
+                        "Manejo de Errores Robustos", "Pruebas Unitarias de Capa Datos", "Pruebas Unitarias de UI",
+                        "Optimización de Rendimiento", "Refactorización Limpia", "Validación Completa Final"
+                    )
+                    
+                    nombresSemilla.forEachIndexed { index, nombre ->
+                        val estado = when (index % 3) {
+                            0 -> EstadoActividad.PENDIENTE
+                            1 -> EstadoActividad.EN_PROCESO
+                            else -> EstadoActividad.COMPLETADA
+                        }
+                        val progreso = when (estado) {
+                            EstadoActividad.PENDIENTE -> 0
+                            EstadoActividad.EN_PROCESO -> 45
+                            EstadoActividad.COMPLETADA -> 100
+                        }
+                        repository.guardar(
+                            Actividad(
+                                nombre = nombre,
+                                descripcion = "Descripción automatizada para la tarea semilla número ${index + 1}",
+                                progreso = progreso,
+                                estado = estado,
+                                fechaCreacion = System.currentTimeMillis() + (index * 1000)
+                            )
+                        )
+                    }
+                }
+                actualizarTotal()
+            } catch (e: Exception) {
+                // Captura silenciosa
+            }
+        }
     }
 
     fun actualizarTotal() {
@@ -121,7 +163,6 @@ class ActividadesViewModel(
     }
 
     fun guardarActividad(actividad: Actividad) {
-        if (_estadoOperacion.value == EstadoOperacionActividades.EN_CURSO) return
         _estadoOperacion.value = EstadoOperacionActividades.EN_CURSO
         _errorMensaje.value = null
         viewModelScope.launch {
@@ -137,7 +178,6 @@ class ActividadesViewModel(
     }
 
     fun eliminarActividad(actividad: Actividad) {
-        if (_estadoOperacion.value == EstadoOperacionActividades.EN_CURSO) return
         _estadoOperacion.value = EstadoOperacionActividades.EN_CURSO
         _errorMensaje.value = null
         viewModelScope.launch {

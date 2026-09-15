@@ -7,7 +7,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -27,78 +29,75 @@ fun PantallaActividades(
 ) {
     var mostrarDialogoNueva by remember { mutableStateOf(false) }
 
-    Scaffold(
-        floatingActionButton = {
-            FloatingActionButton(onClick = { mostrarDialogoNueva = true }) {
-                Icon(Icons.Filled.Add, contentDescription = "Nueva Actividad")
-            }
-        }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp)
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        Text(
+            text = "Gestión de Actividades / Tareas",
+            style = MaterialTheme.typography.headlineSmall
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Fila de estado de operación básica sin alterar el diseño original
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Gestión de Actividades",
-                style = MaterialTheme.typography.headlineSmall
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Fila de estado de operación
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Operación: ${uiState.estadoOperacion.name}",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = when (uiState.estadoOperacion) {
-                        EstadoOperacionActividades.EN_CURSO -> MaterialTheme.colorScheme.primary
-                        EstadoOperacionActividades.EXITOSA -> MaterialTheme.colorScheme.secondary
-                        EstadoOperacionActividades.FALLIDA -> MaterialTheme.colorScheme.error
-                        else -> MaterialTheme.colorScheme.onSurfaceVariant
-                    }
-                )
-                Spacer(modifier = Modifier.weight(1f))
-                Text(
-                    text = "Total: ${uiState.totalActividades}",
-                    style = MaterialTheme.typography.titleMedium
-                )
-            }
-
-            uiState.errorMensaje?.let { msg ->
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(text = "Error: $msg", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Filtros y Ordenamiento
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                FiltroEstadoActividad(
-                    seleccionado = uiState.filtroEstado,
-                    onSeleccionar = onFiltrarEstado
-                )
-
-                Button(onClick = onCambiarOrden) {
-                    Icon(
-                        imageVector = if (uiState.ordenProgresoDesc) Icons.Filled.ArrowDownward else Icons.Filled.ArrowUpward,
-                        contentDescription = "Orden"
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(if (uiState.ordenProgresoDesc) "Progreso Desc" else "Progreso Asc")
+                text = "Operación: ${uiState.estadoOperacion.name}",
+                style = MaterialTheme.typography.labelLarge,
+                color = when (uiState.estadoOperacion) {
+                    EstadoOperacionActividades.EN_CURSO -> MaterialTheme.colorScheme.primary
+                    EstadoOperacionActividades.EXITOSA -> MaterialTheme.colorScheme.secondary
+                    EstadoOperacionActividades.FALLIDA -> MaterialTheme.colorScheme.error
+                    else -> MaterialTheme.colorScheme.onSurfaceVariant
                 }
+            )
+            Spacer(modifier = Modifier.weight(1f))
+            Text(
+                text = "Total: ${uiState.totalActividades}",
+                style = MaterialTheme.typography.titleMedium
+            )
+        }
+
+        uiState.errorMensaje?.let { msg ->
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(text = "Error: $msg", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Mantener los filtros que siempre ha tenido el proyecto
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            FiltroEstadoActividad(
+                seleccionado = uiState.filtroEstado,
+                onSeleccionar = onFiltrarEstado
+            )
+
+            Button(onClick = onCambiarOrden) {
+                Icon(
+                    imageVector = if (uiState.ordenProgresoDesc) Icons.Filled.ArrowDownward else Icons.Filled.ArrowUpward,
+                    contentDescription = "Orden"
+                    )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(if (uiState.ordenProgresoDesc) "Progreso Desc" else "Progreso Asc")
             }
+        }
 
-            Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-            // Renderizar de acuerdo al estado de la pantalla
+        // Renderizado de acuerdo a los estados de la pantalla requeridos
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+        ) {
             when (uiState.estadoPantalla) {
                 EstadoPantallaActividades.CARGANDO -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -119,19 +118,73 @@ fun PantallaActividades(
                     }
                 }
                 EstadoPantallaActividades.CONTENIDO -> {
+                    val bloquesA_Mostrar = if (uiState.filtroEstado != null) {
+                        listOf(uiState.filtroEstado)
+                    } else {
+                        EstadoActividad.entries
+                    }
+
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        items(uiState.actividades, key = { it.id }) { actividad ->
-                            TarjetaActividad(
-                                actividad = actividad,
-                                onEliminar = { onEliminarActividad(actividad) }
-                            )
+                        bloquesA_Mostrar.forEach { estado ->
+                            val listaFiltradaPorBloque = uiState.actividades.filter { it.estado == estado }
+                            if (listaFiltradaPorBloque.isNotEmpty()) {
+                                item(key = "header_${estado.name}") {
+                                    Surface(
+                                        color = MaterialTheme.colorScheme.secondaryContainer,
+                                        shape = MaterialTheme.shapes.small,
+                                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                                    ) {
+                                        Text(
+                                            text = when (estado) {
+                                                EstadoActividad.PENDIENTE -> "📌 Tareas Pendientes"
+                                                EstadoActividad.EN_PROCESO -> "⚡ En Proceso"
+                                                EstadoActividad.COMPLETADA -> "✅ Completadas"
+                                            },
+                                            style = MaterialTheme.typography.titleMedium,
+                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                                        )
+                                    }
+                                }
+
+                                items(listaFiltradaPorBloque, key = { it.id }) { actividad ->
+                                    TarjetaActividad(
+                                        actividad = actividad,
+                                        onAlternarCompletado = {
+                                            val nuevoEstado = if (actividad.estado == EstadoActividad.COMPLETADA) {
+                                                EstadoActividad.PENDIENTE
+                                            } else {
+                                                EstadoActividad.COMPLETADA
+                                            }
+                                            val nuevoProgreso = if (nuevoEstado == EstadoActividad.COMPLETADA) 100 else 0
+                                            onGuardarActividad(actividad.copy(estado = nuevoEstado, progreso = nuevoProgreso))
+                                        },
+                                        onEliminar = { onEliminarActividad(actividad) }
+                                    )
+                                }
+                            }
                         }
                     }
                 }
             }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Botón muy visible en la parte inferior del campo de actividades
+        Button(
+            onClick = { mostrarDialogoNueva = true },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+        ) {
+            Icon(Icons.Filled.Add, contentDescription = null)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(text = "AGREGAR NUEVA ACTIVIDAD / TAREA", style = MaterialTheme.typography.titleSmall)
         }
     }
 
@@ -157,8 +210,11 @@ fun PantallaActividades(
 @Composable
 private fun TarjetaActividad(
     actividad: Actividad,
+    onAlternarCompletado: () -> Unit,
     onEliminar: () -> Unit
 ) {
+    val esCompletada = actividad.estado == EstadoActividad.COMPLETADA
+
     Card(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
@@ -167,7 +223,15 @@ private fun TarjetaActividad(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(modifier = Modifier.weight(1f)) {
+            IconButton(onClick = onAlternarCompletado) {
+                Icon(
+                    imageVector = if (esCompletada) Icons.Filled.CheckCircle else Icons.Filled.RadioButtonUnchecked,
+                    contentDescription = "Completar Tarea",
+                    tint = if (esCompletada) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Column(modifier = Modifier.weight(1f).padding(horizontal = 8.dp)) {
                 Text(text = actividad.nombre, style = MaterialTheme.typography.titleMedium)
                 Text(text = actividad.descripcion, style = MaterialTheme.typography.bodyMedium)
                 Spacer(modifier = Modifier.height(4.dp))
@@ -176,6 +240,7 @@ private fun TarjetaActividad(
                     SuggestionChip(onClick = {}, label = { Text("Progreso: ${actividad.progreso}%") })
                 }
             }
+
             IconButton(onClick = onEliminar) {
                 Icon(Icons.Filled.Delete, contentDescription = "Eliminar")
             }
@@ -200,7 +265,7 @@ private fun FiltroEstadoActividad(
                 text = { Text("Todos los estados") },
                 onClick = { onSeleccionar(null); expandido = false }
             )
-            EstadoActividad.values().forEach { estado ->
+            EstadoActividad.entries.forEach { estado ->
                 DropdownMenuItem(
                     text = { Text(estado.name) },
                     onClick = { onSeleccionar(estado); expandido = false }
@@ -223,13 +288,13 @@ private fun DialogoNuevaActividad(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Nueva Actividad") },
+        title = { Text("Nueva Actividad / Tarea") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     value = nombre,
                     onValueChange = { nombre = it },
-                    label = { Text("Nombre") },
+                    label = { Text("Nombre de la Tarea") },
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
@@ -241,7 +306,7 @@ private fun DialogoNuevaActividad(
                 OutlinedTextField(
                     value = progresoStr,
                     onValueChange = { progresoStr = it },
-                    label = { Text("Progreso (0-100)") },
+                    label = { Text("Progreso inicial (0-100)") },
                     modifier = Modifier.fillMaxWidth()
                 )
                 Box {
@@ -249,10 +314,16 @@ private fun DialogoNuevaActividad(
                         Text("Estado: ${estado.name}")
                     }
                     DropdownMenu(expanded = expandidoEstado, onDismissRequest = { expandidoEstado = false }) {
-                        EstadoActividad.values().forEach { est ->
+                        EstadoActividad.entries.forEach { est ->
                             DropdownMenuItem(
                                 text = { Text(est.name) },
-                                onClick = { estado = est; expandidoEstado = false }
+                                onClick = {
+                                    estado = est
+                                    if (est == EstadoActividad.COMPLETADA) {
+                                        progresoStr = "100"
+                                    }
+                                    expandidoEstado = false
+                                }
                             )
                         }
                     }

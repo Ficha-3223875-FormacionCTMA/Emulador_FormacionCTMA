@@ -20,21 +20,18 @@ import com.example.miformacionctma.PantallaInicio
 import com.example.miformacionctma.di.AppContainer
 import com.example.miformacionctma.ui.actividades.ActividadesViewModel
 import com.example.miformacionctma.ui.actividades.PantallaActividades
-import com.example.miformacionctma.ui.reportes.PantallaNuevoReporte
-import com.example.miformacionctma.ui.reportes.PantallaReportes
-import com.example.miformacionctma.ui.reportes.ReportesViewModel
 
-private enum class Destino { INICIO, REPORTES, ACTIVIDADES }
+private enum class Destino { INICIO, ACTIVIDADES }
 
 /**
- * Contenedor raíz de la app: conserva la pantalla teórica de semanas
- * anteriores (PantallaInicio) y agrega la nueva funcionalidad de
- * persistencia (Reportes) y reactividad (Actividades).
+ * Contenedor raíz de la app simplificado: conserva la pantalla teórica obligatoria
+ * (PantallaInicio) y establece a "Actividades" como la única pestaña de gestión práctica
+ * con persistencia en base de datos local y filtros unificados.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppRoot(container: AppContainer) {
-    var destino by remember { mutableStateOf(Destino.INICIO) }
+    var destino by remember { mutableStateOf(Destino.ACTIVIDADES) }
 
     Scaffold(
         bottomBar = {
@@ -44,12 +41,6 @@ fun AppRoot(container: AppContainer) {
                     onClick = { destino = Destino.INICIO },
                     icon = { Icon(Icons.Filled.Home, contentDescription = null) },
                     label = { Text("Inicio") }
-                )
-                NavigationBarItem(
-                    selected = destino == Destino.REPORTES,
-                    onClick = { destino = Destino.REPORTES },
-                    icon = { Icon(Icons.Filled.Assignment, contentDescription = null) },
-                    label = { Text("Reportes") }
                 )
                 NavigationBarItem(
                     selected = destino == Destino.ACTIVIDADES,
@@ -62,7 +53,6 @@ fun AppRoot(container: AppContainer) {
     ) { padding ->
         when (destino) {
             Destino.INICIO -> PantallaInicio(nombre = "Aprendiz")
-            Destino.REPORTES -> SeccionReportes(container)
             Destino.ACTIVIDADES -> SeccionActividades(container)
         }
     }
@@ -80,32 +70,4 @@ private fun SeccionActividades(container: AppContainer) {
         onGuardarActividad = viewModel::guardarActividad,
         onEliminarActividad = viewModel::eliminarActividad
     )
-}
-
-@Composable
-private fun SeccionReportes(container: AppContainer) {
-    val viewModel: ReportesViewModel = viewModel(factory = ReportesViewModel.factory(container))
-    val uiState by viewModel.uiState.collectAsState()
-    var mostrandoFormulario by remember { mutableStateOf(false) }
-
-    if (mostrandoFormulario) {
-        PantallaNuevoReporte(
-            categorias = uiState.categorias,
-            onGuardar = { titulo, descripcion, categoriaId ->
-                viewModel.guardarReporte(titulo, descripcion, categoriaId)
-                mostrandoFormulario = false
-            },
-            onCancelar = { mostrandoFormulario = false }
-        )
-    } else {
-        PantallaReportes(
-            uiState = uiState,
-            onTextoBusquedaCambia = viewModel::onTextoBusquedaCambia,
-            onOrdenSeleccionado = viewModel::onOrdenSeleccionado,
-            onCategoriaFiltroSeleccionada = viewModel::onCategoriaFiltroSeleccionada,
-            onAlternarResuelto = viewModel::alternarResuelto,
-            onEliminar = viewModel::eliminarReporte,
-            onNuevoReporte = { mostrandoFormulario = true }
-        )
-    }
 }

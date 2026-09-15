@@ -5,7 +5,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class  SolicitudValidationTest {
+class   SolicitudValidationTest {
 
     @Test
     fun verificarProposito_menosDe10Caracteres_esInvalida() {
