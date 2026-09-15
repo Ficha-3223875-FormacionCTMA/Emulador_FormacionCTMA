@@ -28,6 +28,8 @@ fun ActividadEntity.toDomain(): ActividadFormativa {
     )
 }
 
+
+
 // 3. Convertir de Modelo de Dominio (UI) a Entity (Room)
 fun ActividadFormativa.toEntity(): ActividadEntity {
     return ActividadEntity(

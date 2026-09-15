@@ -16,3 +16,5 @@ data class ActividadDto(
     @SerialName("fecha_entrega")
     val fechaEntrega: String? = null
 )
+
+
