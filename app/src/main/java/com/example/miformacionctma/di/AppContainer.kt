@@ -9,6 +9,7 @@ import com.example.miformacionctma.data.repository.RoomActividadRepository
 import com.example.miformacionctma.data.repository.ReporteRepository
 import com.example.miformacionctma.data.repository.RoomReporteRepository
 import kotlinx.serialization.json.Json
+import okhttp3.MediaType.Companion.toMediaType
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 
@@ -25,8 +26,7 @@ class AppContainer(context: Context) {
 
     // Configuración centralizada de Retrofit con kotlinx.serialization (Semana 8)
     private val retrofit: Retrofit by lazy {
-        @Suppress("DEPRECATION")
-        val contentType = okhttp3.MediaType.parse("application/json")!!
+        val contentType = "application/json".toMediaType()
         val jsonConfig = Json { 
             ignoreUnknownKeys = true
             coerceInputValues = true 

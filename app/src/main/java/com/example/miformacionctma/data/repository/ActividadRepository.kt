@@ -76,7 +76,9 @@ private fun ActividadEntity.toDomain() = Actividad(
     descripcion = descripcion,
     progreso = progreso,
     estado = EstadoActividad.valueOf(estado),
-    fechaCreacion = fechaCreacion
+    fechaCreacion = fechaCreacion,
+    evidenciaUri = evidenciaUri,
+    estadoEvidencia = com.example.miformacionctma.domain.model.EstadoEvidencia.valueOf(estadoEvidencia)
 )
 
 private fun Actividad.toEntity() = ActividadEntity(
@@ -85,5 +87,7 @@ private fun Actividad.toEntity() = ActividadEntity(
     descripcion = descripcion,
     progreso = progreso,
     estado = estado.name,
-    fechaCreacion = fechaCreacion
+    fechaCreacion = fechaCreacion,
+    evidenciaUri = evidenciaUri,
+    estadoEvidencia = estadoEvidencia.name
 )

@@ -11,5 +11,7 @@ data class ActividadEntity(
     val descripcion: String,
     val progreso: Int,
     val estado: String, // PENDIENTE, EN_PROCESO, COMPLETADA
-    val fechaCreacion: Long
+    val fechaCreacion: Long,
+    val evidenciaUri: String? = null,
+    val estadoEvidencia: String = "LOCAL" // LOCAL, SUBIENDO, SINCRONIZADA, FALLIDA
 )

@@ -69,6 +69,9 @@ private fun SeccionActividades(container: AppContainer) {
         onFiltrarEstado = viewModel::onFiltrarEstado,
         onGuardarActividad = viewModel::guardarActividad,
         onEliminarActividad = viewModel::eliminarActividad,
-        onSincronizarServidor = viewModel::sincronizarConServidorRemoto
+        onSincronizarServidor = viewModel::sincronizarConServidorRemoto,
+        onActualizarEvidenciaLocal = viewModel::actualizarEvidenciaLocal,
+        onSubirEvidencia = viewModel::subirEvidencia,
+        onEnviarRecordatorio = viewModel::enviarRecordatorio
     )
 }

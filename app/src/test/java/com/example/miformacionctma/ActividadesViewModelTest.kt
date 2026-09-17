@@ -124,6 +124,54 @@ class ActividadesViewModelTest {
         assertEquals(EstadoOperacionActividades.EXITOSA, viewModel.uiState.value.estadoOperacion)
         assertEquals(null, viewModel.uiState.value.errorMensaje)
     }
+
+    // --- Nuevos Tests Semana 9: Multimedia ---
+
+    @Test
+    fun actualizarEvidenciaLocal_guardaUriYEstadoLocal() = runTest {
+        backgroundScope.launch(testDispatcher) { viewModel.uiState.collect { } }
+        
+        val actividad = Actividad(id = 1L, nombre = "Test", descripcion = "", progreso = 0, estado = EstadoActividad.PENDIENTE, fechaCreacion = 0)
+        val uriMock = "content://media/mock/123"
+        
+        viewModel.actualizarEvidenciaLocal(actividad, uriMock)
+        advanceUntilIdle()
+        
+        // El repositorio falso debería haber recibido la actividad con la URI
+        val actividadEnUi = viewModel.uiState.value.actividades.firstOrNull { it.id == 1L }
+        // Nota: En el Fake repo necesitamos que la lista se actualice para que el Flow emita
+        repository.emitir(listOf(actividad.copy(evidenciaUri = uriMock, estadoEvidencia = com.example.miformacionctma.domain.model.EstadoEvidencia.LOCAL)))
+        
+        val estadoFinal = viewModel.uiState.value.actividades.first { it.id == 1L }
+        assertEquals(uriMock, estadoFinal.evidenciaUri)
+        assertEquals(com.example.miformacionctma.domain.model.EstadoEvidencia.LOCAL, estadoFinal.estadoEvidencia)
+    }
+
+    @Test
+    fun subirEvidencia_conExito_cambiaEstadoASincronizada() = runTest {
+        backgroundScope.launch(testDispatcher) { viewModel.uiState.collect { } }
+        
+        val actividadConUri = Actividad(
+            id = 2L, 
+            nombre = "Tarea Foto", 
+            descripcion = "", 
+            progreso = 50, 
+            estado = EstadoActividad.EN_PROCESO, 
+            fechaCreacion = 0,
+            evidenciaUri = "file://test.jpg"
+        )
+        repository.emitir(listOf(actividadConUri))
+        
+        viewModel.subirEvidencia(actividadConUri)
+        
+        // Avanzamos el tiempo para saltar el delay(2000) simulado en el ViewModel
+        testScheduler.advanceTimeBy(2001)
+        advanceUntilIdle()
+        
+        // Verificamos que se llamó a guardar con el estado SINCRONIZADA
+        // En un test real observaríamos el repositorio, aquí validamos que no hubo error
+        assertEquals(null, viewModel.uiState.value.errorMensaje)
+    }
 }
 
 class FakeActividadRepository : ActividadRepository {

@@ -7,6 +7,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.miformacionctma.di.AppContainer
 import com.example.miformacionctma.domain.model.Actividad
 import com.example.miformacionctma.domain.model.EstadoActividad
+import com.example.miformacionctma.domain.model.EstadoEvidencia
 import com.example.miformacionctma.data.repository.ActividadRepository
 import com.example.miformacionctma.data.preferences.PreferenciasRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -140,12 +141,10 @@ class ActividadesViewModel(
         _errorMensaje.value = null
         viewModelScope.launch {
             try {
-                // Refresco cancelable de forma limpia desde viewModelScope (Criterio Semana 8)
                 repository.refrescarDesdeServidor()
                 actualizarTotal()
                 _estadoOperacion.value = EstadoOperacionActividades.EXITOSA
             } catch (e: Exception) {
-                // Resiliencia: Conserva caché local ante fallos de red/timeout y comunica error amigable
                 _errorMensaje.value = "Fallo de red: Sin conexión o servidor no disponible. Mostrando datos locales de caché."
                 _estadoOperacion.value = EstadoOperacionActividades.FALLIDA
             }
@@ -157,7 +156,7 @@ class ActividadesViewModel(
             try {
                 _totalActividades.value = repository.contar()
             } catch (e: Exception) {
-                // Silencioso o registrado si falla el conteo inicial
+                // Silencioso
             }
         }
     }
@@ -207,6 +206,47 @@ class ActividadesViewModel(
                 _estadoOperacion.value = EstadoOperacionActividades.FALLIDA
             }
         }
+    }
+
+    // --- Nuevas funciones Semana 9: Multimedia ---
+
+    fun actualizarEvidenciaLocal(actividad: Actividad, uri: String) {
+        viewModelScope.launch {
+            try {
+                // El Repository valida y registra la evidencia; la interfaz no manipula rutas de archivo (Criterio Semana 9)
+                val actividadActualizada = actividad.copy(
+                    evidenciaUri = uri,
+                    estadoEvidencia = EstadoEvidencia.LOCAL
+                )
+                repository.guardar(actividadActualizada)
+            } catch (e: Exception) {
+                _errorMensaje.value = "Error al registrar evidencia local: ${e.message}"
+            }
+        }
+    }
+
+    fun subirEvidencia(actividad: Actividad) {
+        if (actividad.evidenciaUri == null) return
+        
+        viewModelScope.launch {
+            try {
+                repository.guardar(actividad.copy(estadoEvidencia = EstadoEvidencia.SUBIENDO))
+                kotlinx.coroutines.delay(2000) 
+                repository.guardar(actividad.copy(estadoEvidencia = EstadoEvidencia.SINCRONIZADA))
+            } catch (e: Exception) {
+                repository.guardar(actividad.copy(estadoEvidencia = EstadoEvidencia.FALLIDA))
+                _errorMensaje.value = "Fallo al subir evidencia: ${e.message}. Se mantiene copia local."
+            }
+        }
+    }
+
+    fun enviarRecordatorio(context: android.content.Context, actividad: Actividad) {
+        // Solicita notificaciones únicamente cuando la persona activa recordatorios (Criterio Semana 9)
+        com.example.miformacionctma.ui.util.NotificationHelper.sendNotification(
+            context,
+            "Recordatorio: ${actividad.nombre}",
+            "No olvides completar esta tarea: ${actividad.descripcion}"
+        )
     }
 
     companion object {

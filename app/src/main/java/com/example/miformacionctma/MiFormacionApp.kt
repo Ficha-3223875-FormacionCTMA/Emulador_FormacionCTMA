@@ -10,5 +10,6 @@ class MiFormacionApp : Application() {
     override fun onCreate() {
         super.onCreate()
         container = AppContainer(this)
+        com.example.miformacionctma.ui.util.NotificationHelper.createNotificationChannel(this)
     }
 }
