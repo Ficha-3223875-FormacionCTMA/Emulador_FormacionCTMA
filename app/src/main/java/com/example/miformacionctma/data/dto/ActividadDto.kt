@@ -3,7 +3,6 @@ package com.example.miformacionctma.data.dto
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-
 @Serializable
 data class ActividadDto(
     @SerialName("id")
@@ -15,7 +14,9 @@ data class ActividadDto(
     @SerialName("competencia")
     val competencia: String? = null,
     @SerialName("fecha_entrega")
-    val fechaEntrega: String? = null
+    val fechaEntrega: String? = null, // <-- Coma agregada aquí
+    @SerialName("progreso")
+    val progreso: Int? = null,
+    @SerialName("estado")
+    val estado: String? = null
 )
-
-

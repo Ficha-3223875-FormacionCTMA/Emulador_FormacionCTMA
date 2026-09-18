@@ -5,11 +5,11 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ActividadDao {
-    // Consulta reactiva filtrando por query sobre la columna 'nombre'
+    // Consulta reactiva filtrando por query sobre la columna 'titulo'
     @Query("""
-        SELECT * FROM actividades 
-        WHERE (:query = '' OR nombre LIKE '%' || :query || '%')
-        ORDER BY nombre ASC
+        SELECT * FROM actividades
+        WHERE titulo LIKE '%' || :query || '%'
+        ORDER BY id ASC
     """)
     fun obtenerActividades(query: String): Flow<List<ActividadEntity>>
 
@@ -19,11 +19,13 @@ interface ActividadDao {
     @Query("DELETE FROM actividades")
     suspend fun limpiarTabla()
 
-    // Sincronización atómica para la red
+    // Sincronización inteligente: solo borra e inserta si la red trae datos reales
     @Transaction
     suspend fun sincronizarActividades(actividades: List<ActividadEntity>) {
-        limpiarTabla()
-        insertarTodas(actividades)
+        if (actividades.isNotEmpty()) {
+            limpiarTabla()
+            insertarTodas(actividades)
+        }
     }
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

@@ -1,20 +1,23 @@
 package com.example.miformacionctma.data.repository
 
 import com.example.miformacionctma.data.local.ActividadDao
+import com.example.miformacionctma.data.local.EvidenciaDao
+import com.example.miformacionctma.data.local.entity.EvidenciaEntity
 import com.example.miformacionctma.data.mapper.toDomain
 import com.example.miformacionctma.data.mapper.toEntity
 import com.example.miformacionctma.data.network.RemoteActividadDataSource
 import com.example.miformacionctma.model.ActividadFormativa
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import java.io.IOException
+import kotlin.coroutines.cancellation.CancellationException
 
 class ActividadRepositoryImpl(
     private val dao: ActividadDao,
+    private val evidenciaDao: EvidenciaDao,
     private val remoteDataSource: RemoteActividadDataSource
 ) : ActividadRepository {
 
@@ -24,7 +27,11 @@ class ActividadRepositoryImpl(
         }.flowOn(Dispatchers.IO)
     }
 
-    override fun obtenerActividades(filtro: String, orden: String, busqueda: String): Flow<List<ActividadFormativa>> {
+    override fun obtenerActividades(
+        filtro: String,
+        orden: String,
+        busqueda: String
+    ): Flow<List<ActividadFormativa>> {
         return dao.obtenerActividades(busqueda).map { entities ->
             entities.map { it.toDomain() }
         }.flowOn(Dispatchers.IO)
@@ -62,6 +69,26 @@ class ActividadRepositoryImpl(
     override suspend fun eliminarActividad(actividad: ActividadFormativa) {
         withContext(Dispatchers.IO) {
             dao.eliminar(actividad.toEntity())
+        }
+    }
+
+    // =========================================================================
+    // Métodos para la gestión de Evidencias en Room
+    // =========================================================================
+
+    override fun obtenerEvidenciaPorActividad(actividadId: Long): Flow<EvidenciaEntity?> {
+        return evidenciaDao.obtenerEvidenciaPorActividad(actividadId)
+    }
+
+    override suspend fun guardarEvidencia(evidencia: EvidenciaEntity): Long {
+        return withContext(Dispatchers.IO) {
+            evidenciaDao.insertarOActualizarEvidencia(evidencia)
+        }
+    }
+
+    override suspend fun eliminarEvidenciaPorActividad(actividadId: Long) {
+        withContext(Dispatchers.IO) {
+            evidenciaDao.eliminarEvidenciaPorActividad(actividadId)
         }
     }
 }

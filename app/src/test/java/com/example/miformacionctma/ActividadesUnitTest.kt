@@ -1,5 +1,5 @@
 package com.example.miformacionctma
-
+import com.example.miformacionctma.data.local.EvidenciaDao
 import com.example.miformacionctma.data.dto.ActividadDto
 import com.example.miformacionctma.data.local.ActividadDao
 import com.example.miformacionctma.data.network.ApiService
@@ -41,6 +41,7 @@ class ActividadesUnitTest {
     // Dobles de prueba para la capa de red y persistencia
     private val apiService: ApiService = mock()
     private val daoMock: ActividadDao = mock()
+    private val evidenciaDaoMock: EvidenciaDao = mock()
     private lateinit var repositoryNetworkImpl: ActividadRepositoryImpl
 
     @Before
@@ -48,8 +49,9 @@ class ActividadesUnitTest {
         Dispatchers.setMain(testDispatcher)
 
         repositoryNetworkImpl = ActividadRepositoryImpl(
-            daoMock,
-            RemoteActividadDataSource(apiService)
+            dao = daoMock,
+            evidenciaDao = evidenciaDaoMock, // Añade el mock del EvidenciaDao que falta
+            remoteDataSource = RemoteActividadDataSource(apiService) // Pasa el datasource correctamente
         )
 
         listaActividades = listOf(

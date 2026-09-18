@@ -5,7 +5,6 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -14,37 +13,36 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-
 import androidx.compose.material3.Card
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.miformacionctma.data.local.entity.EvidenciaEntity
 import com.example.miformacionctma.model.ActividadFormativa
-
+import com.example.miformacionctma.ui.ActividadesViewModel
 
 @Composable
 fun TarjetaActividad(
-    actividad: ActividadFormativa
+    actividad: ActividadFormativa,
+    viewModel: ActividadesViewModel
 ) {
+    var expandida by remember { mutableStateOf(false) }
 
-    // Guarda si la tarjeta está abierta o cerrada
-    var expandida by remember {
-        mutableStateOf(false)
-    }
+    // Observar la evidencia directamente desde Room a través del ViewModel
+    val evidenciaActual by viewModel.obtenerEvidencia(actividad.id.toLong())
+        .collectAsStateWithLifecycle(initialValue = null)
 
     Card(
         modifier = Modifier
@@ -58,28 +56,17 @@ fun TarjetaActividad(
                             "progreso ${actividad.progreso} por ciento"
             }
     ) {
-
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable {
-                    // Abrir o cerrar la tarjeta
-                    expandida = !expandida
-                }
+                .clickable { expandida = !expandida }
                 .padding(16.dp)
         ) {
-
-            // ─────────────────────────────
-            // TÍTULO CON ID VISIBLE + FLECHA
-            // ─────────────────────────────
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-
                 Text(
-                    // Muestra el ID antes del título (#1 - Introducción...)
                     text = "#${actividad.id} - ${actividad.titulo}",
                     style = MaterialTheme.typography.titleLarge,
                     modifier = Modifier.weight(1f)
@@ -91,36 +78,19 @@ fun TarjetaActividad(
                 )
             }
 
-
-            Spacer(
-                modifier = Modifier.height(8.dp)
-            )
-
-
-            // ─────────────────────────────
-            // DESCRIPCIÓN
-            // ─────────────────────────────
+            Spacer(modifier = Modifier.height(8.dp))
 
             Text(
                 text = actividad.descripcion,
                 style = MaterialTheme.typography.bodyMedium
             )
 
-
-            Spacer(
-                modifier = Modifier.height(12.dp)
-            )
-
-
-            // ─────────────────────────────
-            // FECHA + ESTADO
-            // ─────────────────────────────
+            Spacer(modifier = Modifier.height(12.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-
                 Text(
                     text = "Fecha: ${actividad.fecha}",
                     style = MaterialTheme.typography.bodyMedium
@@ -132,129 +102,95 @@ fun TarjetaActividad(
                 )
             }
 
+            Spacer(modifier = Modifier.height(12.dp))
 
-            Spacer(
-                modifier = Modifier.height(12.dp)
-            )
+            Text(text = "Progreso: ${actividad.progreso}%")
 
-
-            // ─────────────────────────────
-            // PROGRESO
-            // ─────────────────────────────
-
-            Text(
-                text = "Progreso: ${actividad.progreso}%"
-            )
-
-
-            Spacer(
-                modifier = Modifier.height(6.dp)
-            )
-
+            Spacer(modifier = Modifier.height(6.dp))
 
             LinearProgressIndicator(
-                progress = {
-                    actividad.progreso / 100f
-                },
+                progress = { actividad.progreso / 100f },
                 modifier = Modifier.fillMaxWidth()
             )
 
-
-            // ─────────────────────────────
-            // CONTENIDO DESPLEGABLE
-            // ─────────────────────────────
-
             AnimatedVisibility(
                 visible = expandida,
-
-                enter =
-                    expandVertically() +
-                            fadeIn(),
-
-                exit =
-                    shrinkVertically() +
-                            fadeOut()
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut()
             ) {
-
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 14.dp)
                 ) {
-
                     HorizontalDivider()
 
-                    Spacer(
-                        modifier = Modifier.height(14.dp)
-                    )
-
+                    Spacer(modifier = Modifier.height(14.dp))
 
                     Text(
                         text = "Detalles de la actividad",
                         style = MaterialTheme.typography.titleMedium
                     )
 
+                    Spacer(modifier = Modifier.height(8.dp))
 
-                    Spacer(
-                        modifier = Modifier.height(8.dp)
-                    )
-
-
-                    // ID VISIBLE DENTRO DEL DETALLE
                     Text(
                         text = "🆔 Identificador: #${actividad.id}",
                         style = MaterialTheme.typography.bodyMedium
                     )
 
-
-                    Spacer(
-                        modifier = Modifier.height(6.dp)
-                    )
-
+                    Spacer(modifier = Modifier.height(6.dp))
 
                     Text(
                         text = actividad.descripcion,
                         style = MaterialTheme.typography.bodyMedium
                     )
 
+                    Spacer(modifier = Modifier.height(12.dp))
 
-                    Spacer(
-                        modifier = Modifier.height(12.dp)
-                    )
+                    Text(text = "📅 Fecha: ${actividad.fecha}")
 
-
-                    Text(
-                        text = "📅 Fecha: ${actividad.fecha}"
-                    )
-
-
-                    Spacer(
-                        modifier = Modifier.height(6.dp)
-                    )
-
+                    Spacer(modifier = Modifier.height(6.dp))
 
                     Text(
                         text = when (actividad.estado) {
-
-                            "Completada" ->
-                                "✅ Estado: Actividad completada"
-
-                            "En proceso" ->
-                                "🟡 Estado: Actividad en proceso"
-
-                            else ->
-                                "⚪ Estado: Actividad pendiente"
+                            "Completada" -> "✅ Estado: Actividad completada"
+                            "En proceso" -> "🟡 Estado: Actividad en proceso"
+                            else -> "⚪ Estado: Actividad pendiente"
                         }
                     )
 
+                    Spacer(modifier = Modifier.height(6.dp))
 
-                    Spacer(
-                        modifier = Modifier.height(6.dp)
-                    )
+                    Text(text = "📊 Progreso actual: ${actividad.progreso}%")
 
+                    Spacer(modifier = Modifier.height(12.dp))
 
-                    Text(
-                        text = "📊 Progreso actual: ${actividad.progreso}%"
+                    HorizontalDivider()
+
+                    // Adjunto de Evidencias Persistido en Room
+                    // Adjunto de Evidencias Persistido en Room
+                    SeccionEvidencia(
+                        evidencia = evidenciaActual,
+                        onGuardarEvidencia = { uri ->
+                            // Convertimos el Uri a su representación absoluta en cadena asegurando persistencia
+                            val rutaTexto = if (uri.scheme == "file") {
+                                uri.path ?: uri.toString()
+                            } else {
+                                uri.toString()
+                            }
+
+                            viewModel.guardarEvidencia(
+                                actividadId = actividad.id.toLong(),
+                                uri = rutaTexto,
+                                nombreArchivo = "evidencia_${actividad.id}.jpg",
+                                tamanioBytes = 1024L,
+                                tipoMime = "image/jpeg"
+                            )
+                        },
+                        onEliminarEvidencia = {
+                            viewModel.eliminarEvidencia(actividad.id.toLong())
+                        }
                     )
                 }
             }

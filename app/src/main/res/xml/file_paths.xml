@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Permite acceso al almacenamiento interno (filesDir) -->
+    <files-path name="internal_files" path="." />
+
+    <!-- Permite acceso a la caché (cacheDir) para evitar el cierre al usar la cámara -->
+    <cache-path name="internal_cache_photos" path="." />
+</paths>

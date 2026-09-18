@@ -6,10 +6,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -31,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.miformacionctma.model.ActividadFormativa
 import com.example.miformacionctma.ui.ActividadesViewModel
 import com.example.miformacionctma.ui.ListadoUiState
@@ -41,7 +40,6 @@ import com.example.miformacionctma.ui.theme.MiFormacionCTMATheme
 fun PantallaActividades(
     viewModel: ActividadesViewModel
 ) {
-    // Recolección reactiva y consciente del ciclo de vida (Punto 7 y CA-07)
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val busquedaQuery by viewModel.busquedaQuery.collectAsStateWithLifecycle()
 
@@ -49,7 +47,8 @@ fun PantallaActividades(
         uiState = uiState,
         busquedaQuery = busquedaQuery,
         onBusquedaChange = viewModel::onBusquedaChanged,
-        onReintentar = { /* Puedes invocar una función para recargar en tu ViewModel si es necesario */ }
+        onReintentar = { },
+        viewModel = viewModel
     )
 }
 
@@ -58,7 +57,8 @@ fun PantallaActividadesContent(
     uiState: ListadoUiState,
     busquedaQuery: String,
     onBusquedaChange: (String) -> Unit,
-    onReintentar: () -> Unit
+    onReintentar: () -> Unit,
+    viewModel: ActividadesViewModel? = null
 ) {
     Scaffold(
         topBar = {
@@ -72,7 +72,6 @@ fun PantallaActividadesContent(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Buscador cancelable (CA-04)
             OutlinedTextField(
                 value = busquedaQuery,
                 onValueChange = onBusquedaChange,
@@ -82,7 +81,6 @@ fun PantallaActividadesContent(
                     .padding(horizontal = 16.dp, vertical = 8.dp)
             )
 
-            // Renderizado según UiState (Punto 8)
             when (uiState) {
                 is ListadoUiState.Cargando -> {
                     EstadoCargando(modifier = Modifier.fillMaxSize())
@@ -96,6 +94,7 @@ fun PantallaActividadesContent(
                 is ListadoUiState.Contenido -> {
                     ContenidoAdaptable(
                         actividades = uiState.actividades,
+                        viewModel = viewModel,
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(horizontal = 16.dp)
@@ -147,7 +146,7 @@ fun EstadoError(
                 onClick = onReintentar,
                 modifier = Modifier.padding(top = 16.dp)
             ) {
-                Text("Reintentar") // Cumple CA-05
+                Text("Reintentar")
             }
         }
     }
@@ -184,29 +183,19 @@ fun EstadoVacio(
 @Composable
 fun ContenidoAdaptable(
     actividades: List<ActividadFormativa>,
+    viewModel: ActividadesViewModel? = null,
     modifier: Modifier = Modifier
 ) {
+    val activeViewModel = viewModel ?: viewModel()
+
     BoxWithConstraints(modifier = modifier) {
         if (maxWidth < 600.dp) {
             LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                item {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 8.dp, bottom = 8.dp)
-                    ) {
-                        Text(
-                            text = "Actividades formativas",
-                            style = MaterialTheme.typography.headlineSmall
-                        )
-                        Text(
-                            text = "Consulta tus actividades, fechas, estados y progreso.",
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
-                    }
-                }
                 items(actividades, key = { it.id }) { actividad ->
-                    TarjetaActividad(actividad = actividad)
+                    TarjetaActividad(
+                        actividad = actividad,
+                        viewModel = activeViewModel
+                    )
                 }
             }
         } else {
@@ -217,14 +206,16 @@ fun ContenidoAdaptable(
                 modifier = Modifier.padding(top = 8.dp)
             ) {
                 items(actividades, key = { it.id }) { actividad ->
-                    TarjetaActividad(actividad = actividad)
+                    TarjetaActividad(
+                        actividad = actividad,
+                        viewModel = activeViewModel
+                    )
                 }
             }
         }
     }
 }
 
-// Previews
 @Preview(showBackground = true)
 @Composable
 fun PantallaActividadesContenidoPreview() {

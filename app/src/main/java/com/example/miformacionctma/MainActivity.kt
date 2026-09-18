@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,9 +18,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -29,19 +26,21 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.miformacionctma.data.local.AppDatabase
+import com.example.miformacionctma.data.network.RetrofitClient
+import com.example.miformacionctma.data.network.RemoteActividadDataSource
 import com.example.miformacionctma.data.preferences.PreferenciasRepository
-import com.example.miformacionctma.data.repository.ActividadRepository
+import com.example.miformacionctma.data.repository.ActividadRepositoryImpl
 import com.example.miformacionctma.model.ActividadFormativa
 import com.example.miformacionctma.ui.ActividadesViewModel
 import com.example.miformacionctma.ui.ListadoUiState
+import com.example.miformacionctma.ui.components.TarjetaActividad
 import com.example.miformacionctma.ui.theme.MiFormacionCTMATheme
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
@@ -51,30 +50,21 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        val database = AppDatabase.getDatabase(applicationContext)
+
         setContent {
             MiFormacionCTMATheme {
                 val viewModel: ActividadesViewModel = viewModel(
                     factory = object : ViewModelProvider.Factory {
                         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                            // Implementación funcional completa del repositorio de actividades
-                            val repository = object : ActividadRepository {
-                                override fun obtenerActividades(
-                                    filtro: String,
-                                    orden: String,
-                                    busqueda: String
-                                ): Flow<List<ActividadFormativa>> = flowOf(actividades)
+                            val remoteDataSource = RemoteActividadDataSource(RetrofitClient.apiService)
 
-                                override fun obtenerActividadesLocal(
-                                    busqueda: String
-                                ): Flow<List<ActividadFormativa>> = flowOf(actividades)
+                            val repository = ActividadRepositoryImpl(
+                                dao = database.actividadDao(),
+                                evidenciaDao = database.evidenciaDao(),
+                                remoteDataSource = remoteDataSource
+                            )
 
-                                override suspend fun refreshActividades(): Result<Unit> = Result.success(Unit)
-
-                                override suspend fun insertarActividad(actividad: ActividadFormativa) {}
-                                override suspend fun eliminarActividad(actividad: ActividadFormativa) {}
-                            }
-
-                            // Implementación funcional del repositorio de preferencias
                             val preferenciasRepository = object : PreferenciasRepository {
                                 override fun obtenerFiltroCompetencia(): Flow<String> = flowOf("Todas")
                                 override fun obtenerOrdenamiento(): Flow<String> = flowOf("Fecha")
@@ -100,7 +90,10 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                     is ListadoUiState.Contenido -> {
-                        PantallaFormacion(lista = state.actividades)
+                        PantallaFormacion(
+                            lista = state.actividades,
+                            viewModel = viewModel
+                        )
                     }
                     is ListadoUiState.Vacio -> {
                         MensajeSinActividades()
@@ -114,7 +107,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-// Las 10 actividades ajustadas a la firma (id, título, fecha, estado, progreso)
 val actividades = listOf(
     ActividadFormativa(
         id = 1,
@@ -190,26 +182,30 @@ val actividades = listOf(
 
 @Composable
 fun PantallaFormacion(
-    lista: List<ActividadFormativa> = actividades
+    lista: List<ActividadFormativa> = actividades,
+    viewModel: ActividadesViewModel = viewModel()
 ) {
+    // Ordenamos la lista por ID para que siempre aparezcan del 1 al 10 en orden
+    val listaOrdenada = lista.sortedBy { it.id }
+
     Surface(
         modifier = Modifier.fillMaxSize()
     ) {
-        if (lista.isEmpty()) {
-            MensajeSinActividades()
-        } else {
-            BoxWithConstraints(
-                modifier = Modifier.fillMaxSize()
-            ) {
-                val anchoGrande = maxWidth >= 600.dp
+        BoxWithConstraints(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            val anchoGrande = this.maxWidth >= 600.dp
 
+            if (listaOrdenada.isEmpty()) {
+                MensajeSinActividades()
+            } else {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(20.dp)
                 ) {
                     Encabezado(
-                        cantidad = lista.size
+                        cantidad = listaOrdenada.size
                     )
 
                     Spacer(
@@ -224,11 +220,12 @@ fun PantallaFormacion(
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             items(
-                                items = lista,
+                                items = listaOrdenada,
                                 key = { actividad -> actividad.id }
                             ) { actividad ->
-                                Tarjeta(
-                                    actividad = actividad
+                                TarjetaActividad(
+                                    actividad = actividad,
+                                    viewModel = viewModel
                                 )
                             }
                         }
@@ -238,11 +235,12 @@ fun PantallaFormacion(
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             items(
-                                items = lista,
+                                items = listaOrdenada,
                                 key = { actividad -> actividad.id }
                             ) { actividad ->
-                                Tarjeta(
-                                    actividad = actividad
+                                TarjetaActividad(
+                                    actividad = actividad,
+                                    viewModel = viewModel
                                 )
                             }
                         }
@@ -252,6 +250,7 @@ fun PantallaFormacion(
         }
     }
 }
+
 
 @Composable
 fun Encabezado(
@@ -282,84 +281,6 @@ fun Encabezado(
             text = "$cantidad actividades registradas",
             style = MaterialTheme.typography.labelLarge
         )
-    }
-}
-
-@Composable
-fun Tarjeta(
-    actividad: ActividadFormativa
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .semantics {
-                contentDescription =
-                    "ID ${actividad.id}, " +
-                            "${actividad.titulo}, " +
-                            "fecha ${actividad.fecha}, " +
-                            "estado ${actividad.estado}, " +
-                            "progreso ${actividad.progreso} por ciento"
-            }
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Text(
-                text = "ID: ${actividad.id}",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary
-            )
-
-            Spacer(
-                modifier = Modifier.height(4.dp)
-            )
-
-            Text(
-                text = actividad.titulo,
-                style = MaterialTheme.typography.titleMedium
-            )
-
-            Spacer(
-                modifier = Modifier.height(10.dp)
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(text = "Fecha")
-                Text(text = actividad.fecha)
-            }
-
-            Spacer(
-                modifier = Modifier.height(6.dp)
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(text = "Estado")
-                Text(text = actividad.estado)
-            }
-
-            Spacer(
-                modifier = Modifier.height(10.dp)
-            )
-
-            Text(
-                text = "Progreso: ${actividad.progreso}%"
-            )
-
-            Spacer(
-                modifier = Modifier.height(5.dp)
-            )
-
-            LinearProgressIndicator(
-                progress = { actividad.progreso / 100f },
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
     }
 }
 
